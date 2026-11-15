@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Challenges 5 &amp; 6: Run List Decoder Trainer</title>
+<style>
+  :root{
+    --navy:#0E2841; --title:#003E6B; --teal:#156082; --orange:#E97132;
+    --green:#196B24; --lightblue:#0F9ED5; --bg:#E8E8E8; --card:#FFFFFF;
+    --ink:#1A1A1A; --muted:#5F6B76; --line:#D9D9D9; --grey:#6E7B87;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:"Segoe UI",Arial,Helvetica,sans-serif;line-height:1.5;
+       display:flex;flex-direction:column;min-height:100vh;}
+  header{background:var(--navy);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:16px;}
+  .badge{background:#fff;color:var(--navy);font-weight:800;font-size:20px;letter-spacing:.5px;
+         padding:8px 10px;border-radius:3px;line-height:1;flex:0 0 auto;}
+  .htxt h1{font-size:18px;margin:0;font-weight:700;}
+  .htxt p{font-size:12.5px;margin:2px 0 0;color:#AFC3D6;letter-spacing:.4px;}
+  main{flex:1;padding:20px 16px 40px;max-width:940px;margin:0 auto;width:100%;}
+  .card{background:var(--card);border-radius:12px;box-shadow:0 6px 22px rgba(14,40,65,.12);
+        padding:20px 24px;margin-bottom:18px;}
+  h2{color:var(--title);font-size:19px;margin:0 0 4px;}
+  .sub{color:var(--muted);font-size:13.5px;margin:0 0 16px;}
+
+  /* mode tabs */
+  .tabs{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+  .tab{flex:1 1 260px;background:#fff;border:2px solid var(--line);border-radius:10px;
+       padding:12px 14px;cursor:pointer;transition:all .12s;}
+  .tab b{display:block;color:var(--title);font-size:15px;}
+  .tab span{font-size:12.5px;color:var(--muted);}
+  .tab.on{border-color:var(--teal);background:#F1F6F9;box-shadow:0 3px 12px rgba(21,96,130,.16);}
+  .tab.done b:after{content:"  \2713";color:var(--green);}
+
+  /* the rule strip */
+  .rulebox{background:#F1F6F9;border-left:5px solid var(--teal);border-radius:8px;
+           padding:12px 16px;margin-bottom:18px;}
+  .rulebox p{margin:0 0 5px;font-size:14px;}
+  .rulebox p:last-child{margin-bottom:0;}
+  .rulebox b{color:var(--title);}
+  .mono{font-family:"Courier New",monospace;font-weight:800;}
+
+  /* nibble display */
+  .hdrbyte{display:flex;gap:0;justify-content:center;margin:6px 0 4px;}
+  .nib{width:78px;height:92px;display:flex;flex-direction:column;align-items:center;
+       justify-content:center;font-family:"Courier New",monospace;font-size:44px;font-weight:800;
+       color:#fff;}
+  .nib small{font-family:"Segoe UI",Arial,sans-serif;font-size:10.5px;font-weight:700;
+             letter-spacing:.4px;margin-top:4px;line-height:1.15;text-align:center;}
+  .nib.left{background:var(--teal);border-radius:9px 0 0 9px;}
+  .nib.right{background:var(--orange);border-radius:0 9px 9px 0;}
+  .caption{text-align:center;font-size:12.5px;color:var(--muted);margin:0 0 16px;}
+
+  /* hex strip */
+  .hex{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin:14px 0 6px;}
+  .hb{min-width:50px;padding:11px 4px;border-radius:7px;border:2px solid var(--line);
+      background:#fff;font-family:"Courier New",monospace;font-size:21px;font-weight:800;
+      color:var(--ink);text-align:center;}
+  .hb.hdr{background:var(--navy);border-color:var(--navy);color:#fff;}
+  .hb.dim{color:#B4BEC7;border-style:dashed;}
+  .hb.f1{background:#FDEADF;border-color:var(--orange);color:#8A3F10;}
+  .hb.f2{background:#E4EEF3;border-color:var(--teal);color:var(--title);}
+  .hb i{display:block;font-family:"Segoe UI",Arial,sans-serif;font-style:normal;
+        font-size:9.5px;font-weight:700;color:var(--muted);letter-spacing:.3px;margin-top:3px;}
+
+  /* question inputs */
+  .q{display:flex;align-items:center;gap:12px;margin:12px 0;flex-wrap:wrap;}
+  .q label{flex:1 1 330px;font-size:15px;font-weight:600;}
+  .q label u{text-decoration:none;color:var(--teal);font-weight:800;}
+  input[type=text]{width:150px;padding:10px 12px;border:2px solid var(--line);border-radius:8px;
+       font-family:"Courier New",monospace;font-size:18px;font-weight:800;color:var(--ink);
+       background:#fff;text-align:center;}
+  input[type=text]:focus{outline:none;border-color:var(--teal);}
+  input.ok{border-color:var(--green);background:#EAF5EC;}
+  input.no{border-color:var(--orange);background:#FCEDE4;}
+  .unit{font-size:13.5px;color:var(--muted);min-width:60px;}
+
+  .ctrls{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center;}
+  .btn{background:var(--teal);color:#fff;border:none;font-family:inherit;font-size:14.5px;
+       font-weight:700;padding:10px 20px;border-radius:8px;cursor:pointer;}
+  .btn:hover{background:#0E4C67;}
+  .btn.ghost{background:#fff;color:var(--teal);border:2px solid var(--teal);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+
+  .fb{margin-top:16px;padding:13px 15px;border-radius:9px;font-size:14.5px;display:none;
+      border-left:5px solid var(--teal);background:#F1F6F9;}
+  .fb.show{display:block;}
+  .fb.ok{border-left-color:var(--green);background:#EAF5EC;}
+  .fb.no{border-left-color:var(--orange);background:#FCEDE4;}
+  .fb .work{font-family:"Courier New",monospace;font-size:14px;margin-top:8px;
+            background:#fff;border-radius:6px;padding:10px 12px;border:1px solid var(--line);}
+  .fb .work div{margin:2px 0;}
+
+  .prog{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px;}
+  .dots{display:flex;gap:6px;flex-wrap:wrap;}
+  .dot{width:28px;height:28px;border-radius:7px;background:#E4E9ED;display:flex;
+       align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#9AA6B1;
+       font-family:"Courier New",monospace;}
+  .dot.done{background:var(--green);color:#fff;}
+  .streak{font-size:13px;font-weight:700;color:var(--teal);}
+  .streak span{color:var(--muted);font-weight:600;}
+
+  .donebox{margin-top:18px;padding:20px;border-radius:10px;background:var(--navy);color:#fff;
+           text-align:center;display:none;}
+  .donebox.show{display:block;}
+  .donebox .big{font-size:22px;font-weight:800;color:#7FE0A8;letter-spacing:.5px;}
+  .donebox p{margin:8px 0 0;font-size:14px;color:#CFE0EE;}
+  .hide{display:none;}
+  .tip{font-size:13px;color:var(--muted);margin-top:12px;}
+  footer{text-align:center;font-size:12px;color:var(--muted);padding:16px;}
+  @media(max-width:620px){
+    .nib{width:62px;height:78px;font-size:34px;}
+    .hb{min-width:42px;font-size:18px;}
+    input[type=text]{width:120px;}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="badge">BCIT</div>
+  <div class="htxt">
+    <h1>Run List Decoder Trainer</h1>
+    <p>DIGITAL FORENSICS &amp; CYBERSECURITY WORKSHOP &nbsp;·&nbsp; CLASS 6 &nbsp;·&nbsp; CHALLENGES 5 &amp; 6</p>
+  </div>
+</header>
+
+<main>
+  <div class="tabs">
+    <div class="tab on" id="tab1" onclick="setMode(1)">
+      <b>Mode 1 — Header Nibbles</b>
+      <span>Challenge 5 of 8 &nbsp;·&nbsp; ten in a row</span>
+    </div>
+    <div class="tab" id="tab2" onclick="setMode(2)">
+      <b>Mode 2 — Signed Little-Endian</b>
+      <span>Challenge 6 of 8 &nbsp;·&nbsp; eight in a row</span>
+    </div>
+  </div>
+
+  <!-- ============================ MODE 1 ============================ -->
+  <div id="mode1">
+    <div class="card">
+      <h2>Read the header byte</h2>
+      <p class="sub">Every run in a run list starts with one header byte. It does not hold data —
+         it tells you how wide the next two fields are.</p>
+      <div class="rulebox">
+        <p><b>Left nibble</b> = how many bytes hold the <b>starting cluster</b>.</p>
+        <p><b>Right nibble</b> = how many bytes hold the <b>length</b>.</p>
+        <p>On disk the order is <b>length first, then start</b> — the opposite way round from the nibbles.
+           That swap is the trap.</p>
+      </div>
+
+      <div class="prog">
+        <div class="dots" id="dots1"></div>
+        <div class="streak" id="streak1"></div>
+      </div>
+
+      <div class="hdrbyte" id="nibs1"></div>
+      <p class="caption">the header byte, split into its two nibbles</p>
+
+      <div class="hex" id="hex1"></div>
+      <p class="caption">the header byte and the bytes that follow it</p>
+
+      <div class="q">
+        <label>1. How many bytes hold the <u>length</u>?</label>
+        <input type="text" id="m1a" autocomplete="off" inputmode="numeric">
+        <span class="unit">bytes</span>
+      </div>
+      <div class="q">
+        <label>2. How many bytes hold the <u>starting cluster</u>?</label>
+        <input type="text" id="m1b" autocomplete="off" inputmode="numeric">
+        <span class="unit">bytes</span>
+      </div>
+      <div class="q">
+        <label>3. How long is this whole run, <u>including the header byte</u>?</label>
+        <input type="text" id="m1c" autocomplete="off" inputmode="numeric">
+        <span class="unit">bytes</span>
+      </div>
+
+      <div class="ctrls">
+        <button class="btn" onclick="check(1)">Check</button>
+        <button class="btn ghost" onclick="showMethod(1)">Show me the method</button>
+      </div>
+      <div class="fb" id="fb1"></div>
+      <div class="donebox" id="done1">
+        <div class="big">CHALLENGE 5 / 8 COMPLETE</div>
+        <p>Ten header bytes read correctly in a row. You can read any run list header now —
+           including the ones you have not met yet.</p>
+      </div>
+      <p class="tip">Tip: say it out loud — <i>&ldquo;two-one: one byte of length, two bytes of start,
+         so the run is four bytes long.&rdquo;</i></p>
+    </div>
+  </div>
+
+  <!-- ============================ MODE 2 ============================ -->
+  <div id="mode2" class="hide">
+    <div class="card">
+      <h2>Convert the relative offset</h2>
+      <p class="sub">A run's starting cluster is stored as a <b>difference</b> from the previous run's
+         start — so it can be negative. Get the sign wrong and you navigate off the end of the disk.</p>
+      <div class="rulebox">
+        <p><b>Step 1.</b> Reverse the bytes. <span class="mono">78 EC</span> &rarr; <span class="mono">EC78</span></p>
+        <p><b>Step 2.</b> Is the first hex digit <b>8 or higher</b>? Then the number is negative.</p>
+        <p><b>Step 3.</b> If negative, subtract the wrap value:
+           <span class="mono">65,536</span> for 2 bytes, <span class="mono">16,777,216</span> for 3 bytes.</p>
+      </div>
+
+      <div class="prog">
+        <div class="dots" id="dots2"></div>
+        <div class="streak" id="streak2"></div>
+      </div>
+
+      <div class="hex" id="hex2"></div>
+      <p class="caption" id="cap2"></p>
+
+      <div class="q">
+        <label>What is this offset as a <u>signed</u> decimal number?</label>
+        <input type="text" id="m2a" autocomplete="off">
+        <span class="unit">clusters</span>
+      </div>
+      <p class="tip">Write a minus sign if it is negative. Commas are fine.</p>
+
+      <div class="ctrls">
+        <button class="btn" onclick="check(2)">Check</button>
+        <button class="btn ghost" onclick="showMethod(2)">Show me the method</button>
+      </div>
+      <div class="fb" id="fb2"></div>
+      <div class="donebox" id="done2">
+        <div class="big">CHALLENGE 6 / 8 COMPLETE</div>
+        <p>Eight signed offsets, positive and negative, no mistakes. This is the error that
+           sinks people in the carve — and you just removed it.</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>Self-contained · no internet required · BCIT FSCT 7509 workshop</footer>
+
+<script>
+"use strict";
+
+/* ------------------------------------------------------------------ MODE 1 */
+/* Each item: header byte + the bytes that follow. The answers are DERIVED
+   from the header nibbles, never typed in by hand, so the drill cannot drift
+   out of step with the rule it is teaching. */
+/* `rest` must hold exactly (length field + start field + ONE more byte) — the
+   extra byte is the next run's header, which is what question 3 is really
+   asking them to locate. validatePool() below enforces that, so a future edit
+   cannot silently produce a field that reads off the end of the array. */
+const POOL1 = [
+  {h:0x21, rest:"18 30 31 22"},
+  {h:0x22, rest:"14 00 78 EC 21"},
+  {h:0x31, rest:"20 01 C0 5C 11"},
+  {h:0x12, rest:"00 01 77 21"},
+  {h:0x11, rest:"02 40 22"},
+  {h:0x33, rest:"00 40 00 10 20 30 00"},
+  {h:0x32, rest:"C0 00 5C 48 01 00"},
+  {h:0x13, rest:"08 00 00 C2 21"},
+  {h:0x21, rest:"0E 28 23 00"},
+  {h:0x22, rest:"12 00 DB E6 00"}
+];
+
+/* ------------------------------------------------------------------ MODE 2 */
+/* Deliberate mix. The first six are the real offset fields from the two
+   evidence images and the Class 2 demo record, so this drill is literally
+   rehearsal for the carve. */
+const POOL2 = [
+  {b:"78 EC"},   {b:"28 23"},   {b:"DB E6"},   {b:"C7 1B"},
+  {b:"CF EC"},   {b:"56 14"},   {b:"A9 C1"},   {b:"50 F8"},
+  {b:"30 31"},   {b:"00 80"},   {b:"01 C0 5C"}, {b:"00 20 FF"}
+];
+
+const TARGET = {1:10, 2:8};
+const st = {
+  1:{streak:0, best:0, item:null, order:[], i:0, done:false},
+  2:{streak:0, best:0, item:null, order:[], i:0, done:false}
+};
+
+/* -- truth, computed from bytes ------------------------------------------ */
+function bytesOf(s){ return s.trim().split(/\s+/).map(x=>parseInt(x,16)); }
+
+function signedLE(arr){
+  let u = 0;
+  for (let i = arr.length - 1; i >= 0; i--) u = u * 256 + arr[i];
+  const wrap = Math.pow(256, arr.length);
+  return u >= wrap / 2 ? u - wrap : u;
+}
+function unsignedLE(arr){
+  let u = 0;
+  for (let i = arr.length - 1; i >= 0; i--) u = u * 256 + arr[i];
+  return u;
+}
+function hx(arr){ return arr.map(b=>b.toString(16).toUpperCase().padStart(2,"0")).join(" "); }
+function rev(arr){ return arr.slice().reverse(); }
+function com(n){ return n.toLocaleString("en-US"); }
+
+function truth1(it){
+  const lw = it.h & 0x0F, ow = it.h >> 4;
+  const rest = bytesOf(it.rest);
+  return {
+    lw: lw, ow: ow, total: 1 + lw + ow,
+    lenBytes: rest.slice(0, lw),
+    offBytes: rest.slice(lw, lw + ow),
+    length: unsignedLE(rest.slice(0, lw)),
+    offset: signedLE(rest.slice(lw, lw + ow))
+  };
+}
+
+/* -- pool self-check ----------------------------------------------------- */
+/* A header byte declares its own field widths, so an item that supplies too
+   few bytes silently produces a truncated (wrong) offset. Drop such items
+   rather than teach a wrong answer. */
+function validatePool(){
+  const good = POOL1.filter(it => {
+    const need = (it.h & 0x0F) + (it.h >> 4) + 1;
+    const have = bytesOf(it.rest).length;
+    if (have < need){
+      console.warn("Run list trainer: header 0x" + it.h.toString(16).toUpperCase() +
+                   " needs " + need + " bytes after it but has " + have + " — item skipped.");
+      return false;
+    }
+    return true;
+  });
+  POOL1.length = 0;
+  good.forEach(g => POOL1.push(g));
+}
+
+/* -- shuffling ------------------------------------------------------------ */
+function shuffle(n){
+  const a = Array.from({length:n}, (_,i)=>i);
+  for (let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function nextItem(m){
+  const pool = m === 1 ? POOL1 : POOL2;
+  const s = st[m];
+  if (s.i >= s.order.length){ s.order = shuffle(pool.length); s.i = 0; }
+  s.item = pool[s.order[s.i++]];
+}
+
+/* -- rendering ----------------------------------------------------------- */
+function el(id){ return document.getElementById(id); }
+
+function drawDots(m){
+  const box = el("dots" + m);
+  box.innerHTML = "";
+  for (let i = 0; i < TARGET[m]; i++){
+    const d = document.createElement("div");
+    d.className = "dot" + (i < st[m].streak ? " done" : "");
+    d.textContent = i + 1;
+    box.appendChild(d);
+  }
+  el("streak" + m).innerHTML = st[m].streak + " / " + TARGET[m] +
+    " in a row &nbsp; <span>best: " + st[m].best + "</span>";
+}
+
+function render1(){
+  const it = st[1].item, t = truth1(it);
+  const hh = it.h.toString(16).toUpperCase().padStart(2,"0");
+  el("nibs1").innerHTML =
+    '<div class="nib left">'  + hh[0] + '<small>START<br>field size</small></div>' +
+    '<div class="nib right">' + hh[1] + '<small>LENGTH<br>field size</small></div>';
+
+  let html = '<div class="hb hdr">' + hh + '<i>HEADER</i></div>';
+  const rest = bytesOf(it.rest);
+  rest.forEach((b, i) => {
+    let cls = "dim", tag = "?";
+    if (i < t.lw){ cls = "f1"; tag = "&nbsp;"; }
+    else if (i < t.lw + t.ow){ cls = "f2"; tag = "&nbsp;"; }
+    else { tag = "next run"; }
+    html += '<div class="hb ' + cls + '">' +
+            b.toString(16).toUpperCase().padStart(2,"0") + '<i>' + tag + '</i></div>';
+  });
+  el("hex1").innerHTML = html;
+  ["m1a","m1b","m1c"].forEach(id => { el(id).value = ""; el(id).className = ""; });
+  el("fb1").className = "fb";
+  el("m1a").focus();
+}
+
+function render2(){
+  const arr = bytesOf(st[2].item.b);
+  el("hex2").innerHTML = arr.map(b =>
+    '<div class="hb f2">' + b.toString(16).toUpperCase().padStart(2,"0") + '</div>').join("");
+  el("cap2").innerHTML = "the starting-cluster field &mdash; " + arr.length +
+                         " bytes, as they appear on disk";
+  el("m2a").value = ""; el("m2a").className = "";
+  el("fb2").className = "fb";
+  el("m2a").focus();
+}
+
+/* -- checking ------------------------------------------------------------ */
+function num(id){
+  const raw = el(id).value.replace(/[, _]/g, "").trim();
+  if (raw === "" || !/^-?\d+$/.test(raw)) return null;
+  return parseInt(raw, 10);
+}
+
+function mark(id, good){ el(id).className = good ? "ok" : "no"; }
+
+function feedback(m, good, html){
+  const f = el("fb" + m);
+  f.className = "fb show " + (good ? "ok" : "no");
+  f.innerHTML = html;
+}
+
+function advance(m, good){
+  const s = st[m];
+  if (good){
+    s.streak++;
+    if (s.streak > s.best) s.best = s.streak;
+    if (s.streak >= TARGET[m]){
+      s.done = true;
+      el("done" + m).classList.add("show");
+      el("tab" + m).classList.add("done");
+      drawDots(m);
+      return;
+    }
+  } else {
+    s.streak = 0;
+  }
+  drawDots(m);
+  setTimeout(() => {
+    nextItem(m);
+    if (m === 1) render1(); else render2();
+  }, good ? 700 : 2600);
+}
+
+function check(m){
+  if (st[m].done) return;
+  if (m === 1) check1(); else check2();
+}
+
+function check1(){
+  const it = st[1].item, t = truth1(it);
+  const a = num("m1a"), b = num("m1b"), c = num("m1c");
+  if (a === null || b === null || c === null){
+    feedback(1, false, "Fill in all three boxes with whole numbers.");
+    return;
+  }
+  const okA = a === t.lw, okB = b === t.ow, okC = c === t.total;
+  mark("m1a", okA); mark("m1b", okB); mark("m1c", okC);
+  const hh = it.h.toString(16).toUpperCase().padStart(2,"0");
+
+  if (okA && okB && okC){
+    feedback(1, true,
+      "<b>Correct.</b> <span class='mono'>" + hh + "</span> &rarr; length field " + t.lw +
+      " byte(s) = <b>" + com(t.length) + " clusters</b>, start field " + t.ow +
+      " byte(s) = <b>" + com(t.offset) + "</b>. The run occupies " + t.total +
+      " bytes, so the next header is the byte after that.");
+  } else {
+    let why = "";
+    if (a === t.ow && b === t.lw) why =
+      "<p style='margin:6px 0 0'><b>You swapped them.</b> The <i>left</i> nibble sizes the " +
+      "<i>start</i> field; the <i>right</i> nibble sizes the <i>length</i> field. " +
+      "This is the single most common run-list mistake.</p>";
+    feedback(1, false,
+      "<b>Not yet.</b> Header <span class='mono'>" + hh + "</span>:" +
+      "<div class='work'>" +
+      "<div>left nibble " + hh[0] + "  &rarr; start field is <b>" + t.ow + "</b> byte(s)</div>" +
+      "<div>right nibble " + hh[1] + " &rarr; length field is <b>" + t.lw + "</b> byte(s)</div>" +
+      "<div>run size = 1 header + " + t.lw + " + " + t.ow + " = <b>" + t.total + "</b> bytes</div>" +
+      "</div>" + why +
+      "<p style='margin:8px 0 0'>Streak back to zero. Next one coming&hellip;</p>");
+  }
+  advance(1, okA && okB && okC);
+}
+
+function check2(){
+  const arr = bytesOf(st[2].item.b);
+  const want = signedLE(arr);
+  const got = num("m2a");
+  if (got === null){
+    feedback(2, false, "Type a whole number. Include a minus sign if it is negative.");
+    return;
+  }
+  const good = got === want;
+  mark("m2a", good);
+
+  const r = rev(arr);
+  const u = unsignedLE(arr);
+  const wrap = Math.pow(256, arr.length);
+  const neg = want < 0;
+  const work =
+    "<div class='work'>" +
+    "<div>1. reverse: <b>" + hx(arr) + "</b> &rarr; <b>" + hx(r).replace(/ /g,"") + "</b></div>" +
+    "<div>2. first digit is <b>" + hx(r)[0] + "</b> &rarr; " +
+       (neg ? "8 or higher, so <b>negative</b>" : "below 8, so <b>positive</b>") + "</div>" +
+    "<div>3. " + (neg
+        ? "0x" + hx(r).replace(/ /g,"") + " = " + com(u) + " &minus; " + com(wrap) +
+          " = <b>" + com(want) + "</b>"
+        : "0x" + hx(r).replace(/ /g,"") + " = <b>" + com(want) + "</b>, no subtraction needed")
+      + "</div></div>";
+
+  if (good){
+    feedback(2, true, "<b>Correct — " + com(want) + ".</b>" + work);
+  } else {
+    let why = "";
+    if (neg && got === u) why =
+      "<p style='margin:6px 0 0'><b>You skipped the sign.</b> " + com(u) +
+      " is the unsigned reading. On a 25,599-cluster volume that answer is impossible — " +
+      "which is exactly how you catch this mistake in the lab.</p>";
+    else if (got === unsignedLE(r)) why =
+      "<p style='margin:6px 0 0'><b>You forgot to reverse the bytes.</b> " +
+      "Little-endian means the last byte you see is the most significant.</p>";
+    feedback(2, false, "<b>Not yet.</b>" + work + why +
+      "<p style='margin:8px 0 0'>Streak back to zero. Next one coming&hellip;</p>");
+  }
+  advance(2, good);
+}
+
+function showMethod(m){
+  if (m === 1){
+    const it = st[1].item, t = truth1(it);
+    const hh = it.h.toString(16).toUpperCase().padStart(2,"0");
+    feedback(1, true,
+      "<b>The method — worked on this header, without the answers.</b>" +
+      "<div class='work'>" +
+      "<div>The header is <b>" + hh + "</b>. Two hex digits, two nibbles.</div>" +
+      "<div>Read the LEFT digit (" + hh[0] + "): that many bytes hold the START.</div>" +
+      "<div>Read the RIGHT digit (" + hh[1] + "): that many bytes hold the LENGTH.</div>" +
+      "<div>The run is 1 + (right digit) + (left digit) bytes long.</div>" +
+      "<div>On disk: header, then LENGTH bytes, then START bytes.</div>" +
+      "</div><p style='margin:8px 0 0'>Now fill the boxes in.</p>");
+  } else {
+    feedback(2, true,
+      "<b>The method — three steps, every time.</b>" +
+      "<div class='work'>" +
+      "<div>1. Write the bytes backwards.</div>" +
+      "<div>2. Look at the first hex digit. 8, 9, A, B, C, D, E, F &rarr; negative.</div>" +
+      "<div>3. If negative: convert to decimal, then subtract " +
+        "65,536 (2 bytes) or 16,777,216 (3 bytes).</div>" +
+      "<div>Sanity check: this volume has 25,599 clusters. A bigger answer is wrong.</div>" +
+      "</div><p style='margin:8px 0 0'>Now type your answer.</p>");
+  }
+}
+
+/* -- mode switching + boot ---------------------------------------------- */
+function setMode(m){
+  el("mode1").classList.toggle("hide", m !== 1);
+  el("mode2").classList.toggle("hide", m !== 2);
+  el("tab1").classList.toggle("on", m === 1);
+  el("tab2").classList.toggle("on", m === 2);
+}
+
+["m1a","m1b","m1c"].forEach(id =>
+  el(id).addEventListener("keydown", e => { if (e.key === "Enter") check(1); }));
+el("m2a").addEventListener("keydown", e => { if (e.key === "Enter") check(2); });
+
+validatePool();
+nextItem(1); render1(); drawDots(1);
+nextItem(2); render2(); drawDots(2);
+</script>
+</body>
+</html>

@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Challenge 7/8: Run List Worksheet — manifest_0448.png</title>
+<style>
+  :root{
+    --navy:#0E2841; --title:#003E6B; --teal:#156082; --orange:#E97132;
+    --green:#196B24; --lightblue:#0F9ED5; --bg:#E8E8E8; --card:#FFFFFF;
+    --ink:#1A1A1A; --muted:#5F6B76; --line:#D9D9D9;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:"Segoe UI",Arial,Helvetica,sans-serif;line-height:1.5;
+       display:flex;flex-direction:column;min-height:100vh;}
+  header{background:var(--navy);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:16px;}
+  .badge{background:#fff;color:var(--navy);font-weight:800;font-size:20px;letter-spacing:.5px;
+         padding:8px 10px;border-radius:3px;line-height:1;flex:0 0 auto;}
+  .htxt h1{font-size:18px;margin:0;font-weight:700;}
+  .htxt p{font-size:12.5px;margin:2px 0 0;color:#AFC3D6;letter-spacing:.4px;}
+  main{flex:1;padding:20px 16px 40px;max-width:1000px;margin:0 auto;width:100%;}
+  .card{background:var(--card);border-radius:12px;box-shadow:0 6px 22px rgba(14,40,65,.12);
+        padding:20px 24px;margin-bottom:18px;}
+  h2{color:var(--title);font-size:19px;margin:0 0 4px;}
+  h2 .n{display:inline-block;background:var(--teal);color:#fff;width:27px;height:27px;
+        border-radius:7px;text-align:center;line-height:27px;font-size:15px;margin-right:9px;
+        vertical-align:2px;}
+  .sub{color:var(--muted);font-size:13.5px;margin:0 0 16px;}
+  .mono{font-family:"Courier New",monospace;font-weight:800;}
+
+  .rulebox{background:#F1F6F9;border-left:5px solid var(--teal);border-radius:8px;
+           padding:12px 16px;margin:0 0 16px;font-size:14px;}
+  .rulebox b{color:var(--title);}
+  .rulebox p{margin:0 0 5px;} .rulebox p:last-child{margin-bottom:0;}
+
+  /* run list byte strip */
+  .hex{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0 4px;}
+  .hb{min-width:46px;padding:9px 3px;border-radius:6px;border:2px solid var(--line);
+      background:#fff;font-family:"Courier New",monospace;font-size:19px;font-weight:800;
+      text-align:center;}
+  .hb i{display:block;font-family:"Segoe UI",Arial,sans-serif;font-style:normal;
+        font-size:9px;font-weight:700;letter-spacing:.3px;margin-top:2px;color:var(--muted);}
+  .r1{background:#E4EEF3;border-color:var(--teal);color:var(--title);}
+  .r2{background:#FDEADF;border-color:var(--orange);color:#8A3F10;}
+  .r3{background:#EAF5EC;border-color:var(--green);color:#14501B;}
+  .r0{background:var(--navy);border-color:var(--navy);color:#fff;}
+  .end{background:#F3D6D6;border-color:#B03030;color:#7A1F1F;}
+
+  /* byte map of the $DATA attribute header */
+  .bytemap{font-family:"Courier New",monospace;margin:4px 0 6px;}
+  .bmrow{display:flex;align-items:stretch;gap:8px;margin-bottom:5px;}
+  .bmoff{flex:0 0 62px;font-size:14px;font-weight:800;color:var(--muted);
+         display:flex;align-items:center;justify-content:flex-end;}
+  /* A 16-column grid, not flex: every row has the same 16 tracks and the same
+     gap count, so a band spanning 8 columns lines up exactly with the eight
+     byte cells above it. With flex, rows have different numbers of gaps and
+     the bands drift out of alignment by several pixels. */
+  .bmcells{flex:1 1 auto;min-width:0;display:grid;
+           grid-template-columns:repeat(16,1fr);gap:3px;}
+  .bc{min-width:0;text-align:center;padding:7px 0;border-radius:4px;
+      font-size:14px;font-weight:800;border:1.5px solid var(--line);background:#fff;}
+  .bc.mask{color:#C3CBD2;border-style:dashed;}
+  .bc.lit{background:var(--navy);border-color:var(--navy);color:#fff;}
+  .band{grid-column:span 8;min-width:0;display:flex;align-items:center;justify-content:center;
+        border-radius:5px;font-family:"Segoe UI",Arial,sans-serif;font-size:12.5px;
+        font-weight:800;letter-spacing:.2px;text-align:center;padding:6px 4px;color:#fff;}
+  .band.alloc{background:var(--muted);}
+  .band.real{background:var(--green);}
+  .band.init{background:#B9C1C8;color:#3B4650;}
+  .band.rl{grid-column:span 16;background:var(--teal);}
+  .bmnote{flex:0 0 190px;font-family:"Segoe UI",Arial,sans-serif;font-size:12px;
+          color:var(--muted);display:flex;align-items:center;line-height:1.3;}
+  .recipe{counter-reset:rc;margin:14px 0 4px;padding:0;list-style:none;}
+  .recipe li{counter-increment:rc;position:relative;padding:6px 0 6px 40px;font-size:14.5px;}
+  .recipe li:before{content:counter(rc);position:absolute;left:0;top:5px;width:26px;height:26px;
+      border-radius:6px;background:var(--teal);color:#fff;font-weight:800;font-size:13px;
+      display:flex;align-items:center;justify-content:center;}
+  .warn{margin-top:14px;padding:12px 15px;border-radius:9px;background:#FCEDE4;
+        border-left:5px solid var(--orange);font-size:14px;}
+  .warn b{color:#8A3F10;}
+  @media(max-width:760px){ .bmnote{display:none;} .bmoff{flex-basis:48px;font-size:12px;} }
+
+  /* field rows */
+  /* FOUR columns — each field row emits label, input, unit, tick. With three,
+     every row after the first shifts by one and each field ends up showing the
+     PREVIOUS row's unit. */
+  .fields{display:grid;grid-template-columns:1fr auto 74px 24px;
+          gap:9px 12px;align-items:center;}
+  .fields label{font-size:14.5px;font-weight:600;}
+  .fields label small{display:block;font-weight:500;color:var(--muted);font-size:12px;}
+  input[type=text]{width:172px;padding:9px 11px;border:2px solid var(--line);border-radius:8px;
+       font-family:"Courier New",monospace;font-size:17px;font-weight:800;color:var(--ink);
+       background:#fff;text-align:right;}
+  input[type=text]:focus{outline:none;border-color:var(--teal);}
+  input.ok{border-color:var(--green);background:#EAF5EC;}
+  input.no{border-color:var(--orange);background:#FCEDE4;}
+  input:disabled{background:#EFEFEF;color:#A8B2BA;}
+  .unit{font-size:12.5px;color:var(--muted);}
+  .mk{font-size:19px;font-weight:800;text-align:center;}
+  .mk.ok{color:var(--green);} .mk.no{color:var(--orange);}
+
+  .locked{position:relative;}
+  .locked:after{content:attr(data-lock);position:absolute;inset:0;background:rgba(232,232,232,.88);
+      border-radius:9px;display:flex;align-items:center;justify-content:center;text-align:center;
+      font-size:14px;font-weight:700;color:var(--muted);padding:14px;}
+
+  .ctrls{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center;}
+  .btn{background:var(--teal);color:#fff;border:none;font-family:inherit;font-size:14.5px;
+       font-weight:700;padding:10px 20px;border-radius:8px;cursor:pointer;}
+  .btn:hover{background:#0E4C67;}
+  .btn.ghost{background:#fff;color:var(--teal);border:2px solid var(--teal);}
+  .btn.warn{background:var(--orange);}
+  .fb{margin-top:12px;padding:12px 15px;border-radius:9px;font-size:14px;display:none;
+      border-left:5px solid var(--teal);background:#F1F6F9;}
+  .fb.show{display:block;}
+  .fb.no{border-left-color:var(--orange);background:#FCEDE4;}
+  .fb .work{font-family:"Courier New",monospace;font-size:13.5px;margin-top:7px;background:#fff;
+            border-radius:6px;padding:9px 11px;border:1px solid var(--line);}
+
+  .status{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:13.5px;
+          font-weight:700;color:var(--teal);margin-bottom:6px;}
+  .bar{flex:1 1 200px;height:9px;border-radius:5px;background:#E4E9ED;overflow:hidden;min-width:160px;}
+  .bar div{height:100%;background:var(--green);width:0;transition:width .3s;}
+
+  /* carve plan */
+  #plan{display:none;}
+  #plan.show{display:block;}
+  table{border-collapse:collapse;width:100%;font-size:14px;margin-top:6px;}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:right;}
+  th{background:var(--navy);color:#fff;font-weight:700;text-align:center;}
+  td:first-child{text-align:left;font-weight:700;color:var(--title);}
+  td.m{font-family:"Courier New",monospace;font-weight:800;}
+  .donebox{padding:20px;border-radius:10px;background:var(--navy);color:#fff;text-align:center;}
+  .donebox .big{font-size:22px;font-weight:800;color:#7FE0A8;letter-spacing:.5px;}
+  .donebox p{margin:8px 0 0;font-size:14px;color:#CFE0EE;}
+  .notes{width:100%;min-height:110px;border:2px solid var(--line);border-radius:8px;padding:11px;
+         font-family:"Segoe UI",Arial,sans-serif;font-size:14px;resize:vertical;}
+  .tip{font-size:13px;color:var(--muted);margin-top:10px;}
+  footer{text-align:center;font-size:12px;color:var(--muted);padding:16px;}
+  @media print{
+    header,footer,.ctrls,.rulebox,.btn{display:none!important;}
+    .card{box-shadow:none;border:1px solid #999;page-break-inside:avoid;}
+    body{background:#fff;}
+  }
+  @media(max-width:640px){
+    .fields{grid-template-columns:1fr;}
+    input[type=text]{width:100%;text-align:left;}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="badge">BCIT</div>
+  <div class="htxt">
+    <h1>Challenge 7/8: Run List Worksheet</h1>
+    <p>DIGITAL FORENSICS &amp; CYBERSECURITY WORKSHOP &nbsp;·&nbsp; CLASS 6 &nbsp;·&nbsp;
+       HL-WS02.001 &nbsp;·&nbsp; manifest_0448.png</p>
+  </div>
+</header>
+
+<main>
+
+  <div class="card">
+    <div class="status">
+      <span id="pct">0 of 18 fields correct</span>
+      <div class="bar"><div id="barfill"></div></div>
+    </div>
+    <p class="sub" style="margin:8px 0 0">Every box checks itself as you type. Nothing here gives you an
+      answer — but a wrong answer will tell you <i>which step</i> went wrong.</p>
+  </div>
+
+  <!-- ---------------------------------------------------------- STEP 1 -->
+  <div class="card">
+    <h2><span class="n">1</span>Find the record</h2>
+    <p class="sub">You already know the cluster size and where the <span class="mono">$MFT</span> starts.
+       You found this record in the last challenge.</p>
+    <div class="fields">
+      <label>Which MFT record holds <span class="mono">manifest_0448.png</span>?
+        <small>the deleted <span class="mono">.png</span> you found by walking the allocation flags</small></label>
+      <input type="text" id="f_rec" data-a="61" autocomplete="off">
+      <span class="unit">record no.</span><span class="mk" id="m_f_rec"></span>
+
+      <label>What byte offset does that record begin at?
+        <small><span class="mono">$MFT</span> offset + (record number &times; 1,024)</small></label>
+      <input type="text" id="f_recoff" data-a="78848" autocomplete="off">
+      <span class="unit">bytes</span><span class="mk" id="m_f_recoff"></span>
+    </div>
+    <div class="fb" id="fb1"></div>
+  </div>
+
+  <!-- ---------------------------------------------------------- STEP 2 -->
+  <div class="card">
+    <h2><span class="n">2</span>Find the run list</h2>
+    <div class="rulebox">
+      <p><b>In the record:</b> scan down for <span class="mono">80 00 00 00</span> — that is the
+         <span class="mono">$DATA</span> attribute.</p>
+      <p><b>Check the byte right after the attribute length.</b>
+         <span class="mono">01</span> means non-resident: what follows is a map, not the file.</p>
+      <p><b>Then count 64 bytes down</b> from the start of the attribute. In a 16-byte-wide hex
+         window that is four rows straight down.</p>
+    </div>
+    <p class="sub" style="margin:0 0 10px">Find the fourteen bytes yourself first. Then check them here.</p>
+    <div class="ctrls" style="margin:0 0 6px">
+      <button class="btn ghost" id="revealBtn" onclick="reveal()">I have found the bytes — show them</button>
+    </div>
+    <div id="strip" style="display:none">
+      <div class="hex" id="hex"></div>
+      <p class="tip">Run 1 in blue, run 2 in orange, run 3 in green, and the single
+        <span class="mono">00</span> that ends the list in red. Note that
+        <span class="mono">30 31</span> shows as <b>01</b> in the ASCII pane —
+        those are hex bytes, not the characters &ldquo;0&rdquo; and &ldquo;1&rdquo;.</p>
+    </div>
+  </div>
+
+  <!-- ---------------------------------------------------------- RUNS -->
+  <div class="card" id="card_r1">
+    <h2><span class="n">3</span>Run 1 &nbsp;<span style="font-weight:400;font-size:15px;color:var(--muted)">header <span class="mono">21</span></span></h2>
+    <div class="fields">
+      <label>Length <small>from the length field, in clusters</small></label>
+      <input type="text" id="r1len" data-a="24" autocomplete="off">
+      <span class="unit">clusters</span><span class="mk" id="m_r1len"></span>
+
+      <label>Relative offset <small>signed &mdash; run 1 has nothing before it</small></label>
+      <input type="text" id="r1rel" data-a="12592" autocomplete="off">
+      <span class="unit">clusters</span><span class="mk" id="m_r1rel"></span>
+
+      <label>Absolute LCN <small>where this run starts on the volume</small></label>
+      <input type="text" id="r1lcn" data-a="12592" autocomplete="off">
+      <span class="unit">LCN</span><span class="mk" id="m_r1lcn"></span>
+
+      <label>Byte offset <small>LCN &times; 4,096</small></label>
+      <input type="text" id="r1off" data-a="51576832" autocomplete="off">
+      <span class="unit">bytes</span><span class="mk" id="m_r1off"></span>
+    </div>
+    <div class="fb" id="fb_r1"></div>
+  </div>
+
+  <div class="card locked" id="card_r2" data-lock="Locked. Get run 1's absolute LCN right first — run 2 is measured from it.">
+    <h2><span class="n">4</span>Run 2 &nbsp;<span style="font-weight:400;font-size:15px;color:var(--muted)">header <span class="mono">22</span></span></h2>
+    <div class="fields">
+      <label>Length <small>two bytes this time — reverse them</small></label>
+      <input type="text" id="r2len" data-a="20" autocomplete="off">
+      <span class="unit">clusters</span><span class="mk" id="m_r2len"></span>
+
+      <label>Relative offset <small><b>signed.</b> Reverse, check the first digit, subtract if needed</small></label>
+      <input type="text" id="r2rel" data-a="-5000" autocomplete="off">
+      <span class="unit">clusters</span><span class="mk" id="m_r2rel"></span>
+
+      <label>Absolute LCN <small>run 1's LCN + this relative offset</small></label>
+      <input type="text" id="r2lcn" data-a="7592" autocomplete="off">
+      <span class="unit">LCN</span><span class="mk" id="m_r2lcn"></span>
+
+      <label>Byte offset</label>
+      <input type="text" id="r2off" data-a="31096832" autocomplete="off">
+      <span class="unit">bytes</span><span class="mk" id="m_r2off"></span>
+    </div>
+    <div class="fb" id="fb_r2"></div>
+  </div>
+
+  <div class="card locked" id="card_r3" data-lock="Locked. Get run 2's absolute LCN right first — run 3 is measured from it.">
+    <h2><span class="n">5</span>Run 3 &nbsp;<span style="font-weight:400;font-size:15px;color:var(--muted)">header <span class="mono">21</span></span></h2>
+    <div class="fields">
+      <label>Length</label>
+      <input type="text" id="r3len" data-a="14" autocomplete="off">
+      <span class="unit">clusters</span><span class="mk" id="m_r3len"></span>
+
+      <label>Relative offset <small>signed again — but check the first digit before you assume</small></label>
+      <input type="text" id="r3rel" data-a="9000" autocomplete="off">
+      <span class="unit">clusters</span><span class="mk" id="m_r3rel"></span>
+
+      <label>Absolute LCN <small>run 2's LCN + this relative offset</small></label>
+      <input type="text" id="r3lcn" data-a="16592" autocomplete="off">
+      <span class="unit">LCN</span><span class="mk" id="m_r3lcn"></span>
+
+      <label>Byte offset</label>
+      <input type="text" id="r3off" data-a="67960832" autocomplete="off">
+      <span class="unit">bytes</span><span class="mk" id="m_r3off"></span>
+    </div>
+    <div class="fb" id="fb_r3"></div>
+  </div>
+
+  <!-- ---------------------------------------------------------- TOTALS -->
+  <div class="card" id="card_tot">
+    <h2><span class="n">6</span>Sizes — the part that decides your hash</h2>
+    <p class="sub">Two numbers, one row apart, and they look almost identical in hex.
+       Here is exactly where they live.</p>
+
+    <p style="font-size:14.5px;margin:0 0 8px"><b>The <span class="mono">$DATA</span> attribute
+       header, laid out as your hex editor shows it — 16 bytes per row.</b>
+       Only the landmarks are filled in. The dashes are bytes you read for yourself.</p>
+
+    <div class="bytemap">
+      <div class="bmrow">
+        <div class="bmoff">+0x00</div>
+        <div class="bmcells">
+          <span class="bc lit">80</span><span class="bc lit">00</span>
+          <span class="bc lit">00</span><span class="bc lit">00</span>
+          <span class="bc mask">··</span><span class="bc mask">··</span>
+          <span class="bc mask">··</span><span class="bc mask">··</span>
+          <span class="bc lit">01</span><span class="bc mask">··</span>
+          <span class="bc mask">··</span><span class="bc mask">··</span>
+          <span class="bc mask">··</span><span class="bc mask">··</span>
+          <span class="bc mask">··</span><span class="bc mask">··</span>
+        </div>
+        <div class="bmnote"><b>80 00 00 00</b> = you are at $DATA.<br>The <b>01</b> = non-resident.</div>
+      </div>
+
+      <div class="bmrow">
+        <div class="bmoff">+0x10</div>
+        <div class="bmcells">
+          <span class="bc mask">··</span><span class="bc mask">··</span><span class="bc mask">··</span>
+          <span class="bc mask">··</span><span class="bc mask">··</span><span class="bc mask">··</span>
+          <span class="bc mask">··</span><span class="bc mask">··</span><span class="bc mask">··</span>
+          <span class="bc mask">··</span><span class="bc mask">··</span><span class="bc mask">··</span>
+          <span class="bc mask">··</span><span class="bc mask">··</span><span class="bc mask">··</span>
+          <span class="bc mask">··</span>
+        </div>
+        <div class="bmnote">First and last VCN. Not needed today.</div>
+      </div>
+
+      <div class="bmrow">
+        <div class="bmoff">+0x20</div>
+        <div class="bmcells">
+          <span class="bc lit">40</span><span class="bc lit">00</span>
+          <span class="bc mask">··</span><span class="bc mask">··</span>
+          <span class="bc mask">··</span><span class="bc mask">··</span>
+          <span class="bc mask">··</span><span class="bc mask">··</span>
+          <span class="band alloc">ALLOCATED SIZE &nbsp;·&nbsp; 8 bytes</span>
+        </div>
+        <div class="bmnote">The <b>40</b> is the 64 that sends you to the run list.</div>
+      </div>
+
+      <div class="bmrow">
+        <div class="bmoff">+0x30</div>
+        <div class="bmcells">
+          <span class="band real">REAL (LOGICAL) SIZE &nbsp;·&nbsp; 8 bytes</span>
+          <span class="band init">initialized size</span>
+        </div>
+        <div class="bmnote"><b>This is the one you trim to.</b></div>
+      </div>
+
+      <div class="bmrow">
+        <div class="bmoff">+0x40</div>
+        <div class="bmcells">
+          <span class="band rl">THE RUN LIST &nbsp;·&nbsp; the fourteen bytes you just decoded</span>
+        </div>
+        <div class="bmnote">Four rows down, exactly as promised.</div>
+      </div>
+    </div>
+
+    <ol class="recipe">
+      <li>Find <span class="mono">80 00 00 00</span> in the record. That byte is your starting point.</li>
+      <li>Count <b>two rows down</b>. The <b>right half</b> of that row is the <b>allocated size</b>.</li>
+      <li>The <b>next row down</b> begins with the <b>real (logical) size</b> — the first 8 bytes.</li>
+      <li><b>One more row</b> and you are at the run list. That is your check that you counted right.</li>
+    </ol>
+
+    <div class="warn">
+      <b>Two things that catch people here.</b><br>
+      <b>1.</b> These are 8-byte fields holding fairly small numbers, so the last five bytes are
+      <span class="mono">00</span>. Reverse only the bytes that are not zero:
+      <span class="mono">00 40 06 00 00 00 00 00</span> → <span class="mono">0x064000</span> →
+      <b>409,600</b>. (Not this file's number — just the method.)<br>
+      <b>2.</b> Allocated and real sit one row apart and look nearly the same. Taking the wrong one
+      is the single most common way to fail the hash. <b>Real is the smaller of the two.</b>
+    </div>
+
+    <p class="tip" style="margin-bottom:14px">You can work out the allocated size two ways — clusters × 4,096,
+      and by reading it at <span class="mono">+0x28</span>. They must agree. If they do, you are
+      looking in the right place, and the number below it is the one you want.</p>
+    <div class="fields">
+      <label>Total clusters <small>add the three run lengths</small></label>
+      <input type="text" id="totcl" data-a="58" autocomplete="off">
+      <span class="unit">clusters</span><span class="mk" id="m_totcl"></span>
+
+      <label>Allocated size <small>total clusters &times; 4,096 &mdash; then confirm it at +0x28</small></label>
+      <input type="text" id="alloc" data-a="237568" autocomplete="off">
+      <span class="unit">bytes</span><span class="mk" id="m_alloc"></span>
+
+      <label>Real (logical) size <small>the first 8 bytes of the +0x30 row</small></label>
+      <input type="text" id="logical" data-a="235417" autocomplete="off">
+      <span class="unit">bytes</span><span class="mk" id="m_logical"></span>
+
+      <label>Slack to discard <small>allocated &minus; real &mdash; less than one cluster</small></label>
+      <input type="text" id="slack" data-a="2151" autocomplete="off">
+      <span class="unit">bytes</span><span class="mk" id="m_slack"></span>
+    </div>
+    <div class="fb" id="fb_tot"></div>
+  </div>
+
+  <!-- ---------------------------------------------------------- PLAN -->
+  <div class="card" id="plan">
+    <div class="donebox">
+      <div class="big">CHALLENGE 7 / 8 COMPLETE</div>
+      <p>All eighteen fields correct. You have decoded a fragmented file's map by hand.</p>
+    </div>
+    <h2 style="margin-top:20px">Your carve plan — take this into Challenge 8</h2>
+    <p class="sub">These are your own numbers, arranged the way X-Ways wants them.
+       Select from the start offset to the end offset, copy the block into a new file,
+       then join the three files in this order.</p>
+    <table>
+      <tr><th>Run</th><th>Go to offset</th><th>Block length</th><th>End offset</th><th>Clusters</th></tr>
+      <tr><td>Run 1</td><td class="m">51,576,832</td><td class="m">98,304</td><td class="m">51,675,135</td><td class="m">24</td></tr>
+      <tr><td>Run 2</td><td class="m">31,096,832</td><td class="m">81,920</td><td class="m">31,178,751</td><td class="m">20</td></tr>
+      <tr><td>Run 3</td><td class="m">67,960,832</td><td class="m">57,344</td><td class="m">68,018,175</td><td class="m">14</td></tr>
+    </table>
+    <p class="tip"><b>Then, in this order:</b> join run 1 + run 2 + run 3 &rarr; 237,568 bytes &rarr;
+      trim to the first <b>235,417</b> bytes &rarr; check the signature is
+      <span class="mono">89 50 4E 47 0D 0A 1A 0A</span> &rarr; hash it.<br>
+      <b>Run 2 sits physically before run 1 on the disk.</b> Join them in run order, not disk order.</p>
+
+    <h2 style="margin-top:22px">Notes for the record</h2>
+    <p class="sub">Type your contemporaneous notes here and print the page, or copy them onto your
+      paper worksheet. A classmate will read these in Class 8.</p>
+    <textarea class="notes" id="notes" placeholder="Date and time. Image name and its hash. Record number and offset. Every run: LCN, clusters, byte offset. Tool and version. Recovered file size and hash. Anything that went wrong and how you knew."></textarea>
+    <div class="ctrls">
+      <button class="btn" onclick="window.print()">Print this worksheet</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ctrls">
+      <button class="btn ghost" onclick="checkAll()">Check everything now</button>
+      <button class="btn warn" onclick="resetAll()">Clear the worksheet</button>
+    </div>
+    <p class="tip">Stuck? The two questions that catch almost everything:
+      <b>which of your relative offsets is negative, and how do you know?</b> and
+      <b>is every LCN smaller than 25,599?</b></p>
+  </div>
+
+</main>
+
+<footer>Self-contained · no internet required · BCIT FSCT 7509 workshop</footer>
+
+<script>
+"use strict";
+
+const CLUSTER = 4096;
+const VOL_CLUSTERS = 25599;
+const MFT_OFFSET = 16384;
+
+const GROUPS = {
+  fb1:    ["f_rec","f_recoff"],
+  fb_r1:  ["r1len","r1rel","r1lcn","r1off"],
+  fb_r2:  ["r2len","r2rel","r2lcn","r2off"],
+  fb_r3:  ["r3len","r3rel","r3lcn","r3off"],
+  fb_tot: ["totcl","alloc","logical","slack"]
+};
+const ALL = Object.values(GROUPS).flat();
+
+function el(id){ return document.getElementById(id); }
+function com(n){ return n.toLocaleString("en-US"); }
+
+function val(id){
+  const raw = el(id).value.replace(/[, _]/g, "").trim();
+  if (raw === "" || !/^-?\d+$/.test(raw)) return null;
+  return parseInt(raw, 10);
+}
+function want(id){ return parseInt(el(id).dataset.a, 10); }
+function isOk(id){ return val(id) === want(id); }
+
+/* ---- the run list bytes, revealed only on request ---------------------- */
+const STRIP = [
+  {b:"21", c:"r0", t:"hdr 1"}, {b:"18", c:"r1", t:"len"},
+  {b:"30", c:"r1", t:"start"}, {b:"31", c:"r1", t:"start"},
+  {b:"22", c:"r0", t:"hdr 2"}, {b:"14", c:"r2", t:"len"},
+  {b:"00", c:"r2", t:"len"},   {b:"78", c:"r2", t:"start"},
+  {b:"EC", c:"r2", t:"start"},
+  {b:"21", c:"r0", t:"hdr 3"}, {b:"0E", c:"r3", t:"len"},
+  {b:"28", c:"r3", t:"start"}, {b:"23", c:"r3", t:"start"},
+  {b:"00", c:"end", t:"END"}
+];
+function reveal(){
+  el("hex").innerHTML = STRIP.map(x =>
+    '<div class="hb ' + x.c + '">' + x.b + '<i>' + x.t + '</i></div>').join("");
+  el("strip").style.display = "block";
+  el("revealBtn").disabled = true;
+  el("revealBtn").textContent = "Bytes shown below";
+}
+
+/* ---- diagnostics: name the mistake, never the answer ------------------- */
+function diagnose(id){
+  const got = val(id), a = want(id);
+  if (got === null) return "";
+  const isRel = /rel$/.test(id), isLcn = /lcn$/.test(id), isOff = /off$/.test(id);
+
+  if (isRel && a < 0 && got === a + 65536)
+    return "You read the offset as unsigned. Check the first hex digit after you reverse the bytes — " +
+           "8 or higher means negative, and you subtract 65,536.";
+  if (isRel && got === -a)
+    return "Right size, wrong sign. Reverse the bytes first, then test the leading digit.";
+  if (isLcn && got > VOL_CLUSTERS)
+    return "That LCN is bigger than the whole volume (" + com(VOL_CLUSTERS) +
+           " clusters), so it cannot be right. That is almost always a missed minus sign.";
+  if (isLcn && got === Math.abs(want(id.replace("lcn","rel"))))
+    return "That is this run's relative offset, not its absolute LCN. Add the relative offset to the " +
+           "PREVIOUS run's LCN.";
+  if (isOff){
+    const lcnId = id.replace("off","lcn");
+    const g = val(lcnId);
+    if (g !== null && got === g) return "That is the cluster number, not a byte offset. Multiply by 4,096.";
+    if (g !== null && got === g * 512) return "You multiplied by the sector size. A cluster is 8 sectors — 4,096 bytes.";
+  }
+  if (id === "logical"){
+    if (got === want("alloc"))
+      return "That is the ALLOCATED size — the right half of the +0x20 row. The real size is " +
+             "the row below it: the first 8 bytes of +0x30. They sit one row apart and look " +
+             "almost the same. Real is the smaller of the two.";
+    if (got > want("alloc"))
+      return "The real size cannot be bigger than the allocated size — a file cannot use more " +
+             "space than the file system gave it. You are reading the wrong field, or you have " +
+             "reversed the bytes the wrong way.";
+    if (got === want("logical") * 1) return "";
+  }
+  if (id === "alloc"){
+    const t = val("totcl");
+    if (t !== null && got === t) return "Multiply the cluster count by 4,096.";
+    if (got === want("logical"))
+      return "That is the REAL size — the +0x30 row. The allocated size is the row above it, " +
+             "in the right half of +0x20. It should also equal your cluster count × 4,096.";
+  }
+  if (id === "f_recoff"){
+    const r = val("f_rec");
+    if (r !== null && got === r * 1024)
+      return "You forgot to add the $MFT's own byte offset (" + com(MFT_OFFSET) + ") to the record's position.";
+  }
+  if (id === "totcl") return "Add the three run lengths. Check each one against the length field again.";
+  if (id === "slack") return "Allocated size minus real size. It should be under one cluster.";
+  return "Not right yet. Re-read the field in the hex and try again.";
+}
+
+/* ---- checking + gating ------------------------------------------------- */
+function paint(id){
+  const inp = el(id), mk = el("m_" + id);
+  if (inp.disabled){ inp.className = ""; mk.className = "mk"; mk.textContent = ""; return; }
+  if (val(id) === null){ inp.className = ""; mk.className = "mk"; mk.textContent = ""; return; }
+  const ok = isOk(id);
+  inp.className = ok ? "ok" : "no";
+  mk.className = "mk " + (ok ? "ok" : "no");
+  mk.textContent = ok ? "✓" : "✗";
+}
+
+function groupFeedback(gid){
+  const ids = GROUPS[gid].filter(i => !el(i).disabled);
+  const bad = ids.filter(i => val(i) !== null && !isOk(i));
+  const f = el(gid);
+  if (!bad.length){
+    if (ids.every(i => isOk(i)) && ids.length){
+      f.className = "fb show";
+      f.innerHTML = "<b>All correct.</b>";
+    } else {
+      f.className = "fb";
+    }
+    return;
+  }
+  f.className = "fb show no";
+  f.innerHTML = bad.map(i =>
+    "<div style='margin:3px 0'><b>" + labelOf(i) + ":</b> " + diagnose(i) + "</div>").join("");
+}
+
+function labelOf(id){
+  const map = {
+    f_rec:"Record number", f_recoff:"Record offset",
+    r1len:"Run 1 length", r1rel:"Run 1 relative", r1lcn:"Run 1 LCN", r1off:"Run 1 byte offset",
+    r2len:"Run 2 length", r2rel:"Run 2 relative", r2lcn:"Run 2 LCN", r2off:"Run 2 byte offset",
+    r3len:"Run 3 length", r3rel:"Run 3 relative", r3lcn:"Run 3 LCN", r3off:"Run 3 byte offset",
+    totcl:"Total clusters", alloc:"Allocated size", logical:"Real size", slack:"Slack"
+  };
+  return map[id] || id;
+}
+
+function gate(){
+  /* Run 2 is measured from run 1, run 3 from run 2. Enforcing that order is
+     the point — you cannot skip ahead in a run list. */
+  const open2 = isOk("r1lcn");
+  const open3 = open2 && isOk("r2lcn");
+  el("card_r2").classList.toggle("locked", !open2);
+  el("card_r3").classList.toggle("locked", !open3);
+  GROUPS.fb_r2.forEach(i => { el(i).disabled = !open2; });
+  GROUPS.fb_r3.forEach(i => { el(i).disabled = !open3; });
+}
+
+function progress(){
+  const done = ALL.filter(i => isOk(i)).length;
+  el("pct").textContent = done + " of " + ALL.length + " fields correct";
+  el("barfill").style.width = (100 * done / ALL.length) + "%";
+  el("plan").classList.toggle("show", done === ALL.length);
+  if (done === ALL.length) el("plan").scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+
+function onInput(id){
+  paint(id);
+  gate();
+  ALL.forEach(paint);
+  progress();
+}
+
+function checkAll(){
+  ALL.forEach(paint);
+  gate();
+  Object.keys(GROUPS).forEach(groupFeedback);
+  progress();
+}
+
+function resetAll(){
+  ALL.forEach(i => { el(i).value = ""; el(i).className = ""; el("m_" + i).textContent = ""; });
+  Object.keys(GROUPS).forEach(g => { el(g).className = "fb"; });
+  gate(); progress();
+}
+
+ALL.forEach(id => {
+  el(id).addEventListener("input", () => onInput(id));
+  el(id).addEventListener("blur", () => {
+    paint(id);
+    const gid = Object.keys(GROUPS).find(g => GROUPS[g].includes(id));
+    groupFeedback(gid);
+  });
+  el(id).addEventListener("keydown", e => {
+    if (e.key === "Enter"){
+      const gid = Object.keys(GROUPS).find(g => GROUPS[g].includes(id));
+      paint(id); groupFeedback(gid); gate(); progress();
+    }
+  });
+});
+
+/* Layout self-check. The grid is four columns wide and every field row must
+   contribute exactly label + input + unit + tick. If a row is ever edited to
+   drop one, the whole grid shifts and each field silently displays the
+   previous row's unit — which is invisible unless you happen to look. */
+document.querySelectorAll(".fields").forEach((box, n) => {
+  const kids = box.children.length;
+  if (kids % 4 !== 0) {
+    console.warn("Worksheet layout: field block " + n + " has " + kids +
+                 " elements; it must be a multiple of 4 (label, input, unit, tick).");
+  }
+});
+
+gate();
+progress();
+</script>
+</body>
+</html>
