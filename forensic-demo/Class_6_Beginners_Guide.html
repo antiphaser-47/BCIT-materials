@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>數位鑑識 Class 6 — 初學者完整邏輯指南</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f2f5; color: #1a1a2e; line-height: 1.8; font-size: 16px; }
+  .container { max-width: 880px; margin: 0 auto; padding: 20px; }
+
+  /* 目次 */
+  .toc { background: #fff; border-radius: 16px; padding: 30px 35px; margin: 20px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.06); }
+  .toc h2 { font-size: 1.4rem; color: #0f3460; margin-bottom: 15px; }
+  .toc ol { counter-reset: toc-counter; list-style: none; padding-left: 0; }
+  .toc ol li { counter-increment: toc-counter; margin: 8px 0; padding: 4px 0; border-bottom: 1px dashed #eee; }
+  .toc ol li::before { content: counter(toc-counter) ". "; font-weight: bold; color: #e94560; }
+  .toc a { color: #0f3460; text-decoration: none; }
+  .toc a:hover { color: #e94560; text-decoration: underline; }
+
+  /* 各節卡片 */
+  .section { background: #fff; border-radius: 16px; padding: 30px 35px; margin: 24px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.06); }
+
+  h1 { font-size: 1.8rem; color: #0f3460; text-align: center; margin-bottom: 5px; }
+  .subtitle { text-align: center; color: #888; font-size: 0.95rem; margin-bottom: 25px; }
+
+  h2 { font-size: 1.4rem; color: #0f3460; margin-top: 10px; margin-bottom: 18px; padding-bottom: 8px; border-bottom: 3px solid #e94560; }
+  h3 { font-size: 1.15rem; color: #16213e; margin-top: 28px; margin-bottom: 12px; }
+  h4 { font-size: 1rem; color: #e94560; margin-top: 22px; margin-bottom: 8px; }
+
+  p { margin: 12px 0; }
+  ul, ol { padding-left: 28px; margin: 12px 0; }
+  li { margin: 8px 0; }
+
+  /* 程式碼 / 終端造型 */
+  code { background: #f0eef2; padding: 2px 8px; border-radius: 5px; font-size: 0.88em; font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace; color: #c7254e; }
+  pre { background: #1a1b26; color: #a9b1d6; padding: 18px 20px; border-radius: 10px; overflow-x: auto; font-size: 0.82rem; line-height: 1.6; font-family: 'JetBrains Mono', 'Consolas', monospace; margin: 15px 0; }
+  pre .hl { color: #f7768e; }  /* highlight within pre */
+  pre .num { color: #ff9e64; }
+  pre .cmt { color: #565f89; font-style: italic; }
+
+  /* 提示框 */
+  .tip { background: #e7f5ff; border-left: 5px solid #1e7ab3; padding: 16px 20px; border-radius: 0 10px 10px 0; margin: 18px 0; }
+  .tip::before { content: "💡 提示 "; font-weight: bold; color: #1e7ab3; }
+  .warn { background: #fff8e1; border-left: 5px solid #f9a825; padding: 16px 20px; border-radius: 0 10px 10px 0; margin: 18px 0; }
+  .warn::before { content: "⚠️ 注意 "; font-weight: bold; color: #e65100; }
+  .danger { background: #ffebee; border-left: 5px solid #c62828; padding: 16px 20px; border-radius: 0 10px 10px 0; margin: 18px 0; }
+  .danger::before { content: "🚨 關鍵 "; font-weight: bold; color: #c62828; }
+  .success { background: #e8f5e9; border-left: 5px solid #2e7d32; padding: 16px 20px; border-radius: 0 10px 10px 0; margin: 18px 0; }
+  .success::before { content: "✅ 正確 "; font-weight: bold; color: #2e7d32; }
+
+  /* 表格 */
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.92rem; }
+  th, td { border: 1px solid #dde1e6; padding: 10px 14px; text-align: left; vertical-align: top; }
+  th { background: #0f3460; color: #fff; font-weight: 600; }
+  tr:nth-child(even) { background: #f7f8fa; }
+
+  /* 圖解式 hex display */
+  .hex-row { display: flex; flex-wrap: wrap; gap: 2px; align-items: center; margin: 6px 0; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; }
+  .hex-cell { background: #1a1b26; color: #a9b1d6; padding: 5px 9px; border-radius: 4px; text-align: center; min-width: 32px; }
+  .hex-cell.label { background: transparent; color: #e94560; font-weight: bold; min-width: 60px; text-align: right; }
+  .hex-cell.hdr { background: #e94560; color: #fff; font-weight: bold; }
+  .hex-cell.len { background: #7c3aed; color: #fff; }
+  .hex-cell.st { background: #0ea5e9; color: #fff; }
+  .hex-cell.end { background: #2d2d44; color: #666; }
+
+  /* 步驟編號徽章 */
+  .step-badge { display: inline-block; background: #e94560; color: #fff; width: 32px; height: 32px; line-height: 32px; text-align: center; border-radius: 50%; font-weight: bold; margin-right: 10px; font-size: 0.9rem; }
+
+  /* 區塊邊框修飾 */
+  .boxed { border: 2px solid #0f3460; border-radius: 12px; padding: 20px; margin: 18px 0; background: #fafbff; }
+
+  @media (max-width: 600px) {
+    .container { padding: 10px; }
+    .section, .toc { padding: 18px 16px; }
+    table { font-size: 0.82rem; }
+    th, td { padding: 6px 8px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ==================== 標題 ==================== -->
+<h1>📘 數位鑑識 Class 6<br>從 NTFS 復原已刪除檔案</h1>
+<p class="subtitle">作者: Chase Crawford · 以初學者視角，一步步解說完整邏輯</p>
+
+<!-- ==================== 目次 ==================== -->
+<div class="toc">
+<h2>📑 目次</h2>
+<ol>
+  <li><a href="#ch1-1">這堂課到底在教什麼？</a></li>
+  <li><a href="#ch1-2">先建立基本觀念——刪除檔案時，電腦到底做了什麼</a></li>
+  <li><a href="#ch1-3">兩種找回檔案的方法</a></li>
+  <li><a href="#ch2">磁碟的基本單位：Sector、Cluster、LCN、VCN</a></li>
+  <li><a href="#ch3">$Boot——磁碟的身分證（怎麼量測磁碟）</a></li>
+  <li><a href="#ch4">MFT——檔案的戶口名簿</a></li>
+  <li><a href="#ch5">Allocation Status——怎麼一眼看出「這是刪除的檔案」</a></li>
+  <li><a href="#ch6">MFT 記錄內部的屬性標籤</a></li>
+  <li><a href="#ch7">$DATA 屬性與 Runlist——檔案的「地圖」</a></li>
+  <li><a href="#ch8">Runlist 完整拆解教學</a></li>
+  <li><a href="#ch8-5">補：Little-Endian</a></li>
+  <li><a href="#ch8-6">補：Signed（帶符號）整數與負數</a></li>
+  <li><a href="#ch9">Runlist 實戰解碼——一步步跟著做</a></li>
+  <li><a href="#ch10">檔案大小陷阱：Allocated vs Logical Size</a></li>
+  <li><a href="#ch11">實際 Carve 檔案——把資料從磁碟挖出來</a></li>
+  <li><a href="#ch12">三層驗證：簽名、打開、Hash</a></li>
+  <li><a href="#ch13">Carving（雕刻）是什麼？為什麼不夠？</a></li>
+  <li><a href="#ch14">常見錯誤診斷</a></li>
+  <li><a href="#ch15">結語——你學到的東西</a></li>
+</ol>
+</div>
+
+<!-- ============================================================== -->
+<!--                        第 1 章                                  -->
+<!-- ============================================================== -->
+<div class="section" id="ch1-1">
+<h2>1. 這堂課到底在教什麼？</h2>
+<p>想像一下這個情境：</p>
+<ul>
+  <li>有一間貨運公司 <strong>HarbourLine Logistics Ltd</strong> 被調查。</li>
+  <li>警方扣押了他們的電腦。</li>
+  <li>但在扣押前一天，有人把一些重要的 <strong>貨運艙單（shipping manifest）</strong> 刪掉了。</li>
+  <li>檢察官問你：「檔案還能找回來嗎？裡面寫的收貨人是誰？」</li>
+</ul>
+<p>這堂課就是在教你：<strong>用算術和邏輯，把已經被「刪除」的檔案從磁碟中完整挖出來</strong>，而且證明它沒有被篡改過。</p>
+</div>
+
+<!-- ============================================================== -->
+<div class="section" id="ch1-2">
+<h2>2. 先建立基本觀念——刪除檔案時，電腦到底做了什麼</h2>
+
+<p>大部分初學者會以為「刪除 = 檔案不見了 = 資料被清掉了」。但真相是：</p>
+
+<div class="danger">
+<p><strong>刪除只做了一件事：把檔名標記為「可重用」。</strong></p>
+</div>
+
+<p>更精確地說，電腦只動了 <strong>一個 byte</strong>：</p>
+
+<div class="boxed">
+<h4>範例：檔案 NOTES.TXT</h4>
+<pre>
+刪除前：  4E 4F 54 45 53 20  54 58 54 00 00 00  48 65 79 20 4A 61
+          N  O  T  E  S  ·   T  X  T           H  e  y     J  a
+
+刪除後：  E5 4F 54 45 53 20  54 58 54 00 00 00  48 65 79 20 4A 61
+          ·  O  T  E  S  ·   T  X  T           H  e  y     J  a
+</pre>
+<p><strong>只有第一個 byte 從 4E 變成 E5</strong>，其他全部原封不動。</p>
+</div>
+
+<p>在 FAT 檔案系統中，<code>E5</code> 是「已刪除」的標記。而在 NTFS 中，則是改變 MFT 記錄裡的一個欄位（我們之後會看到）。</p>
+
+<div class="tip">
+所以「刪除」的真正意義是：<strong>系統告訴未來要寫入的檔案「這個位置可以用了」</strong>，但原始的資料還躺在那裡，直到被新檔案蓋過去為止。
+</div>
+</div>
+
+<!-- ============================================================== -->
+<div class="section" id="ch1-3">
+<h2>3. 兩種找回檔案的方法</h2>
+
+<table>
+  <tr><th>方法一：走地圖</th><th>方法二：雕刻（Carving）</th></tr>
+  <tr>
+    <td>如果檔案系統的「地圖」（MFT 記錄）還在，就照著地圖走。</td>
+    <td>如果地圖已經消失，就在整顆硬碟上搜尋「看起來像檔案」的簽名。</td>
+  </tr>
+  <tr>
+    <td><strong>優點</strong>：得到完全正確的檔案——正確的區塊、正確的順序、正確的長度。</td>
+    <td><strong>優點</strong>：即使檔案系統整個壞掉也能用。</td>
+  </tr>
+  <tr>
+    <td><strong>缺點</strong>：地圖不見就沒輒。</td>
+    <td><strong>缺點</strong>：無法處理碎片，且沒有檔名、時間等 metadata。</td>
+  </tr>
+</table>
+
+<div class="tip">
+本課程的策略：<strong>先嘗試方法一</strong>（今天的主軸），真的不行再用方法二。
+</div>
+</div>
+
+<!-- ============================================================== -->
+<!--                        第 2 章                                   -->
+<!-- ============================================================== -->
+<div class="section" id="ch2">
+<h2>4. 磁碟的基本單位：Sector、Cluster、LCN、VCN</h2>
+
+<p>要讀懂後面的內容，你必須先熟悉以下四個名詞。我們用一個圖書館的比喻來說明：</p>
+
+<table>
+  <tr><th>名詞</th><th>定義</th><th>圖書館比喻</th><th>這裡的數值</th></tr>
+  <tr>
+    <td><strong>Sector（磁區）</strong></td>
+    <td>硬碟最小的讀寫單位</td>
+    <td>一本書</td>
+    <td><strong>512 bytes</strong></td>
+  </tr>
+  <tr>
+    <td><strong>Cluster（叢集）</strong></td>
+    <td>檔案系統一次分配的最小空間</td>
+    <td>一個書架（放了好幾本書）</td>
+    <td><strong>8 個 sectors = 4,096 bytes</strong></td>
+  </tr>
+  <tr>
+    <td><strong>LCN</strong><br>Logical Cluster Number</td>
+    <td>這個叢集在「整顆磁碟」上是第幾個</td>
+    <td>書架的「棟+層+架」編號（絕對位置）</td>
+    <td>從 0 開始數到最大叢集數</td>
+  </tr>
+  <tr>
+    <td><strong>VCN</strong><br>Virtual Cluster Number</td>
+    <td>這個叢集在「這個檔案裡面」是第幾個</td>
+    <td>一本書的「頁碼」</td>
+    <td>從 0 開始數到檔案結束</td>
+  </tr>
+</table>
+
+<div class="boxed">
+<h4>最重要的公式——牢記它</h4>
+<pre>
+Cluster Size = Bytes per Sector × Sectors per Cluster
+             = 512 × 8
+             = 4,096 bytes
+
+Byte Offset = LCN × Cluster Size
+            = LCN × 4,096
+</pre>
+<p><strong>什麼是 byte offset？</strong> 就是檔案裡的某個資料在整顆磁碟的哪個位置（第幾個 byte）。當我們要用十六進位編輯器（如 HxD、X-Ways）跳到某個位置時，就是輸入這個數字。</p>
+</div>
+</div>
+
+<!-- ============================================================== -->
+<!--                        第 3 章                                   -->
+<!-- ============================================================== -->
+<div class="section" id="ch3">
+<h2>5. $Boot——磁碟的身分證（怎麼量測磁碟）</h2>
+
+<p>每一顆 NTFS 磁碟的第一筆資料叫做 <strong>$Boot</strong>。它就像磁碟的身分證，記錄了磁碟的所有基本資訊。</p>
+
+<div class="tip">
+為什麼要先讀 $Boot？因為如果你不知道 Cluster 有多大、$MFT 從哪裡開始，後面什麼都做不了。
+</div>
+
+<table>
+  <tr><th>欄位</th><th>偏移位置</th><th>大小</th><th>說明</th></tr>
+  <tr>
+    <td>Bytes per Sector</td>
+    <td><code>0x0B</code></td>
+    <td>2 bytes（Little Endian）</td>
+    <td>例如 <code>00 02</code> 反轉為 <code>0x0200</code> = 512</td>
+  </tr>
+  <tr>
+    <td>Sectors per Cluster</td>
+    <td><code>0x0D</code></td>
+    <td>1 byte</td>
+    <td>例如 <code>08</code> = 8</td>
+  </tr>
+  <tr>
+    <td><strong>$MFT 起始叢集</strong></td>
+    <td><code>0x30</code></td>
+    <td><strong>8 bytes</strong>（Little Endian）</td>
+    <td>告訴你 MFT 這張表格從哪個叢集開始</td>
+  </tr>
+</table>
+
+<div class="boxed">
+<h4>一步步實作：怎麼讀 $Boot</h4>
+<ol>
+  <li>打開磁碟映像檔的第一個 sector（前 512 bytes）</li>
+  <li>跳到 offset <code>0x0B</code>，讀取 2 bytes → 反轉 → 得到 bytes per sector</li>
+  <li>跳到 offset <code>0x0D</code>，讀取 1 byte → 得到 sectors per cluster</li>
+  <li>兩者相乘 = cluster size</li>
+  <li>跳到 offset <code>0x30</code>，讀取 8 bytes → 反轉 → 得到 $MFT 的起始 LCN</li>
+  <li>將 LCN × cluster size = $MFT 的 byte offset</li>
+  <li>跳到那個 offset——你應該會看到 <code>FILE0</code> 簽名</li>
+</ol>
+</div>
+</div>
+
+<!-- ============================================================== -->
+<!--                        第 4 章                                   -->
+<!-- ============================================================== -->
+<div class="section" id="ch4">
+<h2>6. MFT——檔案的戶口名簿</h2>
+
+<h3>MFT 是什麼？</h3>
+<p>MFT（Master File Table，主檔案表）是 NTFS 最核心的資料結構。你可以把它想像成一個 <strong>戶口名簿</strong>，<strong>每一個檔案或目錄</strong> 都在這本名簿裡有一筆記錄。</p>
+
+<p>即使在這個課程中，我們要復原的是「已刪除」的檔案，它的 MFT 記錄仍然可能還存在——這就是我們能復原它的關鍵。</p>
+
+<h3>MFT 的結構</h3>
+<ul>
+  <li>每筆記錄固定 <strong>1,024 bytes</strong></li>
+  <li>第一筆記錄（record 0）是 <code>$MFT</code> 自己</li>
+  <li>第二筆（record 1）是 <code>$MFTMirr</code>（MFT 的備份）</li>
+  <li>後續還有 <code>$LogFile</code>、<code>$Volume</code>、<code>$AttrDef</code> 等系統檔案</li>
+  <li>真正的使用者檔案從記錄編號較高的位置開始</li>
+</ul>
+
+<div class="boxed">
+<h4>計算任一記錄的 byte offset</h4>
+<pre>
+Record n 的起始位置 = $MFT 偏移 + (n × 1,024)
+
+範例：如果 $MFT 在 byte 49,152，要找 record 61：
+49,152 + (61 × 1,024) = 49,152 + 62,464 = 111,616
+</pre>
+</div>
+
+<h3>記錄簽名：FILE0</h3>
+<p>每筆 MFT 記錄的前 4 個 bytes 一定是 <code>46 49 4C 45</code>（ASCII 的 <code>FILE</code>），第 5 個 byte 是 <code>30</code>（<code>0</code>）。</p>
+<p>所以如果你在十六進位編輯器中搜尋 ASCII 字串 <code>FILE0</code>，你會找到磁碟上<strong>所有</strong>的 MFT 記錄——包括來自已不存在之磁碟的殘留記錄。</p>
+
+<div class="tip">
+搜尋 FILE0 而不只是 FILE，能減少誤判。因為 <code>0</code>（<code>30</code>）是下一個欄位的一部分，不是檔案名稱的一部分。
+</div>
+</div>
+
+<!-- ============================================================== -->
+<div class="section" id="ch5">
+<h2>7. Allocation Status——怎麼一眼看出「這是刪除的檔案」</h2>
+
+<p>在每筆 MFT 記錄的標頭中，有一個非常重要的 2-byte 欄位：</p>
+
+<table>
+  <tr><th>記錄內偏移</th><th>大小</th><th>意義</th></tr>
+  <tr><td><code>0x16</code></td><td>2 bytes</td><td><strong>Allocation Status（配置狀態）</strong></td></tr>
+</table>
+
+<p>這個欄位的值代表：</p>
+
+<table>
+  <tr><th>數值</th><th>意義</th></tr>
+  <tr><td><code>00 00</code></td><td><strong>已刪除的檔案</strong></td></tr>
+  <tr><td><code>01 00</code></td><td>正常分配的檔案</td></tr>
+  <tr><td><code>02 00</code></td><td>已刪除的目錄</td></tr>
+  <tr><td><code>03 00</code></td><td>正常分配的目錄</td></tr>
+</table>
+
+<div class="warn">
+<strong>這就是全部了。</strong> 檔案和已刪除檔案之間的差別，僅僅是 MFT 記錄中 offset 0x16 的兩個 bytes。資料本身完全沒有被碰過。
+</div>
+
+<p>所以在實務上，要找到已刪除的檔案，你只需要：</p>
+<ol>
+  <li>跳到你懷疑的 MFT 記錄</li>
+  <li>跳到記錄內 offset 0x16</li>
+  <li>讀取 2 bytes，看是不是 <code>00 00</code> 或 <code>02 00</code></li>
+</ol>
+</div>
+
+<!-- ============================================================== -->
+<div class="section" id="ch6">
+<h2>8. MFT 記錄內部的屬性標籤</h2>
+
+<p>一個 MFT 記錄（1,024 bytes）就像一個箱子，裡面有多個「屬性（Attribute）區塊」，每個區塊開頭都有一個標籤告訴你「我是誰」：</p>
+
+<table>
+  <tr><th>屬性 ID</th><th>名稱</th><th>內容</th></tr>
+  <tr><td><code>0x10</code></td><td><code>$STANDARD_INFORMATION</code></td><td>時間戳記（建立、修改、存取、刪除時間）</td></tr>
+  <tr><td><code>0x30</code></td><td><code>$FILE_NAME</code></td><td>檔名</td></tr>
+  <tr><td><code>0x80</code></td><td><strong><code>$DATA</code></strong></td><td><strong>檔案內容本身，或指向內容的地圖（Runlist）</strong></td></tr>
+  <tr><td><code>FF FF FF FF</code></td><td colspan="2">記錄結束標記</td></tr>
+</table>
+
+<div class="tip">
+在十六進位編輯器中搜尋 <code>80 00 00 00</code>（$DATA 的簽名）就可以找到檔案的內容或地圖。
+</div>
+
+<h3>Resident vs Non-Resident</h3>
+<p>在 <code>$DATA</code> 屬性的第二個 byte，有一個關鍵的旗標：</p>
+<ul>
+  <li><code>00</code> = <strong>RESIDENT（常駐）</strong>：檔案非常小（約 600 bytes 以下），內容直接存在 MFT 記錄裡面。你可以在記錄中直接讀出檔案內容。</li>
+  <li><code>01</code> = <strong>NON-RESIDENT（非常駐）</strong>：檔案比較大，內容散落在磁碟各處。MFT 記錄內存放的是 <strong>Runlist</strong>——一份告訴你「去哪裡找檔案碎片」的地圖。</li>
+</ul>
+
+<div class="success">
+<strong>本課程的目標</strong>：我們要復原的檔案是 NON-RESIDENT 的，所以關鍵在於讀懂那份 Runlist。
+</div>
+</div>
+
+<!-- ============================================================== -->
+<div class="section" id="ch7">
+<h2>9. $DATA 屬性與 Runlist——檔案的「地圖」</h2>
+
+<p>當一個檔案是 NON-RESIDENT 時，它的 <code>$DATA</code> 屬性裡放的是一串編碼過的數字，這些數字描述：<strong>這個檔案的內容分散在磁碟上的哪些叢集中</strong>。</p>
+
+<p>我們用下面的例子來說明：</p>
+
+<div class="boxed">
+<h4>檔案 manifest_0448.png 的實際情況</h4>
+<p>這個檔案總共佔用 <strong>58 個叢集</strong>，但因為磁碟空間不連續，它被拆成 <strong>3 段</strong> 儲存：</p>
+
+<pre>
+Run 1: 起始 LCN = 12,592, 長度 = 24 叢集  (VCN 0-23)
+Run 2: 起始 LCN =  7,592, 長度 = 20 叢集  (VCN 24-43)
+Run 3: 起始 LCN = 16,592, 長度 = 14 叢集  (VCN 44-57)
+</pre>
+
+<p>注意：Run 2 在磁碟上的位置（LCN 7,592）<strong>在 Run 1（LCN 12,592）之前</strong>！這叫<strong>碎片化（fragmentation）</strong>。</p>
+<p>檔案在磁碟上是散亂儲存的，但我們要按照 VCN 順序（0→1→2→…→57）把它們重新拼起來。</p>
+</div>
+
+<p>Runlist 就是這樣一份清單，記錄了每一段（Run）的：</p>
+<ol>
+  <li><strong>長度</strong>：這一段有幾個叢集</li>
+  <li><strong>起始 LCN</strong>：這一段從哪個叢集開始</li>
+</ol>
+
+<p>而 NTFS 把這份清單編碼成非常緊湊的二進位格式——我們接下來就要學怎麼解碼。</p>
+</div>
+
+<!-- ============================================================== -->
+<div class="section" id="ch8">
+<h2>10. Runlist 完整拆解教學</h2>
+
+<h3>10.1 總體結構</h3>
+
+<pre>
+Run 1: header length start_bytes...
+Run 2: header length start_bytes...
+Run 3: header length start_bytes...
+00    ← 結束標記（header byte 的位置出現 00）
+</pre>
+
+<p>每一行（Run）的第一個 byte 叫做 <strong>header byte</strong>，它告訴你接下來的格式。</p>
+
+<h3>10.2 Header Byte 的解讀</h3>
+
+<p>Header byte 由兩個「半 byte」（nibble）組成：</p>
+
+<pre>
+例如 header byte = 0x21
+
+左半 nibble = 2  →  Start 欄位佔 2 bytes
+右半 nibble = 1  →  Length 欄位佔 1 byte
+
+整筆 Run 的長度 = 1 (header) + 1 (length) + 2 (start) = 4 bytes
+</pre>
+
+<div class="warn">
+<strong>初學者最容易搞錯的地方</strong>：左半 nibble 是 Start 的 byte 數，右半 nibble 是 Length 的 byte 數。很多人會搞反！
+</div>
+
+<table>
+  <tr><th>Header</th><th>左半 (Start)</th><th>右半 (Length)</th><th>總長度</th></tr>
+  <tr><td><code>21</code></td><td>2 bytes</td><td>1 byte</td><td>1+1+2 = 4 bytes</td></tr>
+  <tr><td><code>31</code></td><td>3 bytes</td><td>1 byte</td><td>1+1+3 = 5 bytes</td></tr>
+  <tr><td><code>22</code></td><td>2 bytes</td><td>2 bytes</td><td>1+2+2 = 5 bytes</td></tr>
+  <tr><td><code>11</code></td><td>1 byte</td><td>1 byte</td><td>1+1+1 = 3 bytes</td></tr>
+</table>
+
+<h3>10.3 實際解碼範例</h3>
+
+<div class="boxed">
+<h4>範例：Run 1</h4>
+<pre>
+Hex:  21 18 30 31
+
+拆解：
+21    → header: length 1 byte, start 2 bytes
+18    → length = 0x18 = 24（叢集）
+30 31 → start = 反轉為 0x3130 = 12,592（LCN）
+
+結果：Run 1: LCN 12,592, 長度 24 叢集
+</pre>
+</div>
+
+<div class="boxed">
+<h4>範例：Run 2（注意！）</h4>
+<pre>
+Hex:  22 14 00 78 EC
+
+拆解：
+22    → header: length 2 bytes, start 2 bytes
+14 00 → length = 反轉為 0x0014 = 20（叢集）
+78 EC → start = 反轉為 0xEC78
+
+⚠️ 但 0xEC78 怎麼轉換成 -5,000？
+我們在「10.6 負數」章節會詳細說明。
+</pre>
+</div>
+
+<div class="boxed">
+<h4>範例：Run 3</h4>
+<pre>
+Hex:  21 0E 28 23
+
+拆解：
+21    → header: length 1 byte, start 2 bytes
+0E    → length = 0x0E = 14（叢集）
+28 23 → start = 反轉為 0x2328 = 9,000？？？
+
+等一下，0x2328 = 9,000，但 Run 3 的 LCN 應該是 16,592 啊？
+問題出在哪？
+
+答案：Run 2 之後的 start 是「相對值」！不是絕對 LCN！
+</pre>
+</div>
+
+<div class="danger">
+<strong>關鍵概念——必須徹底理解</strong>：
+
+<p>只有 Run 1 的 start 是 <strong>絕對 LCN</strong>。</p>
+<p>Run 2 之後的 start 是 <strong>相對於前一個 Run 的 LCN 的偏移值</strong>。</p>
+
+<p>正確計算方式：</p>
+<pre>
+Run 1 的 LCN = 12,592（絕對值）
+
+Run 2 的相對偏移 = 0xEC78 → 反轉 → 0xEC78 → 負數 → -5,000
+Run 2 的 LCN = 12,592 + (-5,000) = 7,592 ✓
+
+Run 3 的相對偏移 = 0x2328 → 反轉 → 0x2328 = 9,000（正數）
+Run 3 的 LCN = 7,592 + 9,000 = 16,592 ✓
+</pre>
+</div>
+
+<h3 id="ch8-5">10.4 補充：Little-Endian（小端序）</h3>
+
+<p>電腦在儲存多位元組的數值時，有兩種方式：</p>
+<ul>
+  <li><strong>Big-Endian（大端序）</strong>：跟人類閱讀習慣一樣，高位元組在前。例如 <code>30 31</code> = 0x3031 = 12,337</li>
+  <li><strong>Little-Endian（小端序）</strong>：低位元組在前。<code>30 31</code> 要反轉為 <code>31 30</code> 再讀 = 0x3130 = 12,592</li>
+</ul>
+
+<div class="tip">
+<strong>NTFS 使用 Little-Endian</strong>。所以看到 <code>30 31</code> 時，不要直接讀成 0x3031！要先反轉成 <code>31 30</code>，才得到正確的 0x3130。
+</div>
+
+<table>
+  <tr><th>原始 bytes</th><th>正確反轉後</th><th>十進位值</th></tr>
+  <tr><td><code>30 31</code></td><td><code>31 30</code> → 0x3130</td><td>12,592</td></tr>
+  <tr><td><code>14 00</code></td><td><code>00 14</code> → 0x0014</td><td>20（不是 5,120！）</td></tr>
+  <tr><td><code>78 EC</code></td><td><code>EC 78</code> → 0xEC78</td><td>60,536（但這是負數，見下節）</td></tr>
+</table>
+
+<h3 id="ch8-6">10.5 補充：Signed（帶符號）整數與負數</h3>
+
+<p>Runlist 中的相對偏移是 <strong>signed（帶符號）</strong> 的，也就是說它可以是正數或負數。正數表示「往前移動」，負數表示「往後移動」。</p>
+
+<h4>如何判斷正負</h4>
+<pre>
+反轉完 bytes 之後，看最高位（最左邊的 hex digit）：
+
+0x0000 ~ 0x7FFF  →  最高位 byte < 0x80  →  正數
+0x8000 ~ 0xFFFF  →  最高位 byte ≥ 0x80  →  負數
+</pre>
+
+<h4>如果是負數，怎麼轉成十進位？</h4>
+
+<div class="boxed">
+<h4>三步驟：負數轉換</h4>
+<pre>
+原始 bytes: 78 EC
+
+步驟 1：反轉 bytes
+78 EC → EC 78 → 0xEC78
+
+步驟 2：檢查最高位
+E ≥ 8 → 這是負數
+
+步驟 3：減去 wrap value（0x10000 = 65,536）
+0xEC78 - 0x10000 = 60,536 - 65,536 = -5,000
+</pre>
+</div>
+
+<div class="tip">
+<strong>自我檢查</strong>：這個課程中的磁碟總共有 25,599 個叢集。如果你算出來的 LCN 大於 25,599，或者 LCN 變成負數（而且不是在 Run 2 之後），你一定搞錯了某個步驟——通常是忘記處理負號。
+</div>
+</div>
+
+<!-- ============================================================== -->
+<div class="section" id="ch9">
+<h2>11. Runlist 實戰解碼——一步步跟著做</h2>
+
+<p>現在我們把所有知識串起來，實際解碼 <code>record 61</code>（manifest_0448.png）的 Runlist。</p>
+
+<h3>前置步驟：找到 $DATA 屬性</h3>
+<ol>
+  <li>跳到 MFT record 61 的起始位置</li>
+  <li>搜尋 <code>80 00 00 00</code>（$DATA 簽名）</li>
+  <li>檢查 non-resident flag（第二個 byte）是 <code>01</code></li>
+  <li>從 $DATA 開頭往後數 <strong>64 bytes（0x40）</strong>，那就是 Runlist 的起點</li>
+</ol>
+
+<h3>解碼 Run 1</h3>
+<pre>
+Hex: 21 18 30 31
+
+header = 21  →  右 nibble = 1 (長度 1 byte), 左 nibble = 2 (起點 2 bytes)
+length = 18  →  0x18 = 24 叢集
+start  = 30 31 → 反轉 → 31 30 → 0x3130 = 12,592
+
+✅ Run 1: LCN = 12,592, 長度 = 24 叢集
+   Byte offset = 12,592 × 4,096 = 51,576,832
+   結束位置 = 51,576,832 + (24 × 4,096) - 1 = 51,675,135
+</pre>
+
+<h3>解碼 Run 2</h3>
+<pre>
+Hex: 22 14 00 78 EC
+
+header = 22  →  右 nibble = 2 (長度 2 bytes), 左 nibble = 2 (起點 2 bytes)
+length = 14 00 → 反轉 → 00 14 → 0x0014 = 20 叢集
+start  = 78 EC → 反轉 → EC 78
+
+檢查符號：E ≥ 8 → 負數
+0xEC78 - 0x10000 = -5,000
+
+Run 2 的 LCN = Run 1 的 LCN + (-5,000) = 12,592 - 5,000 = 7,592
+
+✅ Run 2: LCN = 7,592, 長度 = 20 叢集
+   Byte offset = 7,592 × 4,096 = 31,096,832
+</pre>
+
+<h3>解碼 Run 3</h3>
+<pre>
+Hex: 21 0E 28 23
+
+header = 21  →  右 nibble = 1, 左 nibble = 2
+length = 0E  →  0x0E = 14 叢集
+start  = 28 23 → 反轉 → 23 28 → 0x2328
+
+檢查符號：2 < 8 → 正數 → 9,000
+
+Run 3 的 LCN = Run 2 的 LCN + 9,000 = 7,592 + 9,000 = 16,592
+
+✅ Run 3: LCN = 16,592, 長度 = 14 叢集
+   Byte offset = 16,592 × 4,096 = 67,964,832
+</pre>
+
+<h3>驗證總量</h3>
+<pre>
+總叢集數 = 24 + 20 + 14 = 58 叢集
+總分配空間 = 58 × 4,096 = 237,568 bytes
+</pre>
+
+<div class="success">
+🎉 解碼完成！我們知道檔案的三段分別在 byte offset 51,576,832、31,096,832、67,964,832 開始。
+</div>
+</div>
+
+<!-- ============================================================== -->
+<div class="section" id="ch10">
+<h2>12. 檔案大小陷阱：Allocated vs Logical Size</h2>
+
+<p>你可能以為「58 × 4,096 = 237,568 bytes 就是檔案大小了」。但事實上，<strong>檔案真正的長度比較小</strong>。</p>
+
+<table>
+  <tr><th>名詞</th><th>意義</th><th>範例</th></tr>
+  <tr>
+    <td><strong>Allocated Size（分配大小）</strong></td>
+    <td>檔案在磁碟上佔用的空間 = 叢集數 × cluster size</td>
+    <td>58 × 4,096 = 237,568 bytes</td>
+  </tr>
+  <tr>
+    <td><strong>Logical / Real Size（邏輯大小）</strong></td>
+    <td>檔案真正的資料長度</td>
+    <td>235,417 bytes</td>
+  </tr>
+</table>
+
+<p>差的 2,151 bytes（237,568 - 235,417）是 <strong>slack（剩餘空間）</strong>——最後一個叢集中未被檔案使用的尾巴。這些 bytes 裡可能含有其他檔案的殘留資料，不是這個檔案的一部分。</p>
+
+<div class="danger">
+<strong>非常重要</strong>：如果你不把尾巴砍掉就去算 hash，你的 hash 和老師的 hash 對不上。hash 比對的是「檔案真正的內容」，不是「檔案加上無關的 slack」。
+</div>
+
+<h3>在哪裡讀到 Logical Size？</h3>
+<p>在 <code>$DATA</code> 屬性標頭中，從屬性開頭算起 offset <code>0x30</code> 處，有三個連續的 8-byte 欄位：</p>
+<ul>
+  <li>Allocated Size</li>
+  <li><strong>Real (Logical) Size ← 我們要的</strong></li>
+  <li>Initialized Size</li>
+</ul>
+</div>
+
+<!-- ============================================================== -->
+<div class="section" id="ch11">
+<h2>13. 實際 Carve 檔案——把資料從磁碟挖出來</h2>
+
+<p>現在我們有了解碼後的 Run 資訊，可以開始動手了。整個過程只有 <strong>四個動詞</strong>：</p>
+
+<div class="boxed" style="text-align:center; font-size:1.2rem; font-weight:bold;">
+Select（選取） → Copy（複製） → Concatenate（拼接） → Trim（修剪）
+</div>
+
+<h3>步驟 1：選取 Run 1</h3>
+<ol>
+  <li>在十六進位編輯器中按 <kbd>Ctrl+G</kbd>，輸入 byte offset：<code>51,576,832</code></li>
+  <li>標記為選取起點</li>
+  <li>再按 <kbd>Ctrl+G</kbd>，輸入結束 offset：<code>51,576,832 + (24×4,096) - 1 = 51,675,135</code></li>
+  <li>標記為選取終點</li>
+  <li>複製到新檔案 → 命名為 <code>run1.bin</code></li>
+</ol>
+
+<h3>步驟 2：選取 Run 2</h3>
+<ol>
+  <li>跳到 offset：<code>31,096,832</code></li>
+  <li>選取 20 × 4,096 = 81,920 bytes</li>
+  <li>複製為 <code>run2.bin</code></li>
+</ol>
+
+<h3>步驟 3：選取 Run 3</h3>
+<ol>
+  <li>跳到 offset：<code>67,964,832</code></li>
+  <li>選取 14 × 4,096 = 57,344 bytes</li>
+  <li>複製為 <code>run3.bin</code></li>
+</ol>
+
+<h3>步驟 4：拼接（按照 VCN 順序！）</h3>
+<pre>
+Windows 命令列：
+  copy /b run1.bin + run2.bin + run3.bin assembled.bin
+
+或在 HxD 中直接將三個檔案依序複製貼上。
+</pre>
+
+<div class="danger">
+<strong>順序絕對不能錯！</strong> 磁碟上的順序是 Run 2 → Run 1 → Run 3，但檔案內的順序是：先 Run 1 (VCN 0-23)、再 Run 2 (VCN 24-43)、最後 Run 3 (VCN 44-57)。拼接必須照 VCN 順序，而不是 LCN 順序。
+</div>
+
+<h3>步驟 5：修剪（Trim）</h3>
+<pre>
+assembled.bin 的長度 = 237,568 bytes
+但檔案的 Logical Size = 235,417 bytes
+
+多出的 2,151 bytes 要砍掉。
+
+在 HxD：Ctrl+E → 輸入起始位置 235,417 → 選擇到結尾 → 刪除
+</pre>
+
+<h3>步驟 6：重新命名</h3>
+<p>將檔案重新命名為 <code>manifest_0448.png</code></p>
+</div>
+
+<!-- ============================================================== -->
+<div class="section" id="ch12">
+<h2>14. 三層驗證：簽名、打開、Hash</h2>
+
+<p>復原完檔案後，我們需要<strong>證明</strong>這個檔案是正確的、完整的、未被篡改的。</p>
+
+<h3>第一層：檢查簽名</h3>
+<pre>
+用十六進位編輯器打開 recovered.png
+檢查前 8 個 bytes 是否為：
+
+89 50 4E 47 0D 0A 1A 0A
+
+這是標準的 PNG 檔案簽名。
+如果對了 → 代表 Run 1 的起始位置是正確的。
+</pre>
+
+<h3>第二層：確認可以打開</h3>
+<p>直接雙擊檔案，看圖片檢視器能不能正常顯示。如果能看到圖片 → 大部分資料是正確的。</p>
+
+<h3>第三層：比對 Hash（最嚴格）</h3>
+<pre>
+在 Windows 命令列：
+  certutil -hashfile manifest_0448.png MD5
+
+在 Linux：
+  md5sum manifest_0448.png
+
+你的 MD5 值和老師的 MD5 值必須完全一樣。
+這代表檔案和原始檔案一模一樣——連一個 bit 都沒差。
+</pre>
+
+<div class="tip">
+為什麼 hash 很重要？在法庭上，你必須能證明「這個檔案就是我從嫌犯電腦中復原的檔案，而且我沒有動過它」。hash 就是最好的證據。
+</div>
+</div>
+
+<!-- ============================================================== -->
+<div class="section" id="ch13">
+<h2>15. Carving（雕刻）是什麼？為什麼不夠？</h2>
+
+<h3>Signature Carving 的原理</h3>
+<p>不靠任何檔案系統資訊，直接掃描整顆硬碟，尋找特定檔案類型的「簽名」：</p>
+
+<table>
+  <tr><th>檔案類型</th><th>開頭簽名</th><th>結尾簽名</th></tr>
+  <tr><td>PNG</td><td><code>89 50 4E 47</code></td><td><code>49 45 4E 44</code></td></tr>
+  <tr><td>JPEG</td><td><code>FF D8 FF</code></td><td><code>FF D9</code></td></tr>
+  <tr><td>PDF</td><td><code>25 50 44 46 (%PDF)</code></td><td></td></tr>
+  <tr><td>ZIP / docx / xlsx</td><td><code>50 4B (PK)</code></td><td></td></tr>
+</table>
+
+<h3>Carving 的致命弱點：碎片化</h3>
+
+<div class="warn">
+回頭看我們的檔案：Run 2（LCN 7,592）在磁碟上位於 Run 1（LCN 12,592）之前。如果 Carver 從 Run 1 的開頭開始讀，它會一路往下讀到 Run 2——但那是錯的！因為 Run 2 不在 Run 1 的後面，而是在 Run 1 的前面。
+</div>
+
+<h3>Carving 還缺少什麼？</h3>
+<table>
+  <tr><th>透過 Runlist 復原</th><th>透過 Carving 復原</th></tr>
+  <tr><td>知道檔名：<code>manifest_0448.png</code></td><td>無法知道檔名：<code>f0001234.png</code></td></tr>
+  <tr><td>知道路徑：<code>\MANIFESTS\</code>（已刪除）</td><td>沒有路徑</td></tr>
+  <tr><td>有建立、修改、刪除時間</td><td>沒有時間戳記</td></tr>
+  <tr><td>知道來自 MFT record 61</td><td>沒有記錄來源</td></tr>
+  <tr><td>精確長度：235,417 bytes</td><td>長度由 Carver 猜測</td></tr>
+</table>
+
+<div class="success">
+<strong>同樣的 bytes，只有 Runlist 復原的結果能說出完整的故事</strong>——這是鑑識和一般資料救援的差別。
+</div>
+
+<h3>各種媒體的復原期望</h3>
+<table>
+  <tr><th>媒體類型</th><th>復原成功率</th><th>原因</th></tr>
+  <tr><td>傳統硬碟 (HDD)</td><td>✅ 良好</td><td>資料會一直躺在那裡，直到被覆寫</td></tr>
+  <tr><td>USB 隨身碟 / SD 卡</td><td>⚠️ 尚可</td><td>控制器簡單，通常不支援 TRIM</td></tr>
+  <tr><td>現代 SSD（有 TRIM）</td><td>❌ 差</td><td>系統會在背景自動清除已刪除的資料</td></tr>
+  <tr><td>加密手機</td><td>🚫 近乎零</td><td>沒有密碼或金鑰就無法解密</td></tr>
+</table>
+
+<div class="warn">
+在答應任何人「一定能救回檔案」之前，先搞清楚對方用的是什麼類型的儲存裝置！
+</div>
+</div>
+
+<!-- ============================================================== -->
+<div class="section" id="ch14">
+<h2>16. 常見錯誤診斷</h2>
+
+<table>
+  <tr><th>錯誤現象</th><th>幾乎可以肯定是…</th><th>怎麼辦？</th></tr>
+  <tr>
+    <td>算出來的 LCN 大於 25,599</td>
+    <td><strong>忘了處理負號</strong>——把負數當正數加了</td>
+    <td>回頭檢查 Run 2 的相對偏移。它的最高位是不是 ≥ 8？</td>
+  </tr>
+  <tr>
+    <td>LCN 和 offset 看似正確，但拷貝出來的資料是亂碼</td>
+    <td><strong>Nibble 搞反了</strong>——把 Length 的 byte 數和 Start 的 byte 數弄反了</td>
+    <td>記住：左 nibble = Start，右 nibble = Length</td>
+  </tr>
+  <tr>
+    <td>99% 的檔案正確，但最後一小段損壞</td>
+    <td><strong>Run 順序錯了</strong>，或某個 Run 的 LCN 算錯</td>
+    <td>重新檢查 Run 2 的相對偏移是否為負，以及 Run 3 是從 Run 2 加過去的</td>
+  </tr>
+  <tr>
+    <td>檔案打得開，但 hash 不符</td>
+    <td><strong>忘記 Trim</strong>——多了 slack bytes</td>
+    <td>回到 $DATA 標頭讀取 Logical Size，重新 trim</td>
+  </tr>
+</table>
+
+<div class="tip">
+<strong>放輕鬆</strong>：錯誤的 carve 是正常的、可預期的、可診斷的。唯一的真失敗是放棄診斷。
+</div>
+</div>
+
+<!-- ============================================================== -->
+<div class="section" id="ch15">
+<h2>17. 結語——你學到的東西</h2>
+
+<div class="success">
+<ul>
+  <li>✓ 從 Boot Sector 讀取磁碟的幾何參數</li>
+  <li>✓ 理解 MFT 的結構，以及如何找到特定的記錄</li>
+  <li>✓ 用 2 bytes 判斷一個檔案是否被刪除</li>
+  <li>✓ 從 MFT 記錄中直接讀取常駐（resident）檔案的內容</li>
+  <li>✓ 理解 Little-Endian 和 Signed 整數</li>
+  <li>✓ 手動解碼 Runlist——包括處理負的相對偏移</li>
+  <li>✓ 將 Runlist 轉換為磁碟上的 byte offset</li>
+  <li>✓ 從三個不同的位置 Cut & Paste 檔案的碎片</li>
+  <li>✓ 按照 VCN 順序正確拼接</li>
+  <li>✓ 用 Logical Size 修剪多餘的 slack</li>
+  <li>✓ 用簽名、可視性、hash 三層驗證</li>
+  <li>✓ 理解 Carving 的用途和限制</li>
+</ul>
+</div>
+
+<p style="font-size:1.3rem; text-align:center; margin-top:30px; color:#0f3460; font-weight:bold;">
+「一個已刪除的檔案，用算術復原。」
+</p>
+
+<p style="font-size:1.1rem; text-align:center; color:#e94560; margin-top:10px;">
+<strong>下堂課預告</strong>：行動裝置、平板與 SQLite 鑑識——手機永遠開機、永遠加密，從資料庫中挖出已刪除的訊息。
+</p>
+
+</div>
+</div>
+</body>
+</html>

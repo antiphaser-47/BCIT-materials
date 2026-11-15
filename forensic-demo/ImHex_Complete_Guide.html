@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ImHex 完整解題操作指南 — NTFS Runlist 資料復原</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f2f5; color: #1a1a2e; line-height: 1.8; font-size: 15px; }
+  .container { max-width: 960px; margin: 0 auto; padding: 20px; }
+  .toc { background: #fff; border-radius: 16px; padding: 25px 30px; margin: 20px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.06); }
+  .toc h2 { font-size: 1.3rem; color: #0f3460; margin-bottom: 12px; }
+  .toc ol { counter-reset: toc; list-style: none; padding-left: 0; }
+  .toc ol li { counter-increment: toc; margin: 7px 0; padding: 3px 0; border-bottom: 1px dashed #eee; font-size: 0.92rem; }
+  .toc ol li::before { content: counter(toc) ". "; font-weight: bold; color: #e94560; }
+  .section { background: #fff; border-radius: 16px; padding: 28px 32px; margin: 22px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.06); }
+  h1 { font-size: 1.7rem; color: #0f3460; text-align: center; margin-bottom: 4px; }
+  .subtitle { text-align: center; color: #888; font-size: 0.9rem; margin-bottom: 20px; }
+  h2 { font-size: 1.35rem; color: #0f3460; padding-bottom: 8px; border-bottom: 3px solid #e94560; margin: 8px 0 18px; }
+  h3 { font-size: 1.1rem; color: #16213e; margin-top: 24px; margin-bottom: 10px; }
+  h4 { font-size: 1rem; color: #e94560; margin-top: 18px; margin-bottom: 8px; }
+  p { margin: 10px 0; }
+  ul, ol { padding-left: 26px; margin: 10px 0; }
+  li { margin: 6px 0; }
+
+  code { background: #edeff2; padding: 2px 7px; border-radius: 4px; font-size: 0.88em; font-family: 'JetBrains Mono', 'Consolas', monospace; color: #c7254e; }
+  pre { background: #1a1b26; color: #a9b1d6; padding: 16px 18px; border-radius: 10px; overflow-x: auto; font-size: 0.8rem; line-height: 1.55; font-family: 'JetBrains Mono', 'Consolas', monospace; margin: 14px 0; }
+  .key { display: inline-block; background: #e8e8e8; border: 1px solid #ccc; border-radius: 4px; padding: 1px 8px; font-size: 0.82rem; font-weight: bold; box-shadow: 0 1px 2px rgba(0,0,0,0.1); font-family: inherit; }
+  .menu { color: #0f3460; font-weight: 600; }
+  .hl { color: #f7768e; }
+  .num { color: #ff9e64; }
+
+  /* 提示框 */
+  .tip { background: #e7f5ff; border-left: 5px solid #1e7ab3; padding: 14px 18px; border-radius: 0 10px 10px 0; margin: 16px 0; }
+  .tip::before { content: "💡 "; font-weight: bold; color: #1e7ab3; }
+  .warn { background: #fff8e1; border-left: 5px solid #f9a825; padding: 14px 18px; border-radius: 0 10px 10px 0; margin: 16px 0; }
+  .warn::before { content: "⚠️ "; font-weight: bold; color: #e65100; }
+  .danger { background: #ffebee; border-left: 5px solid #c62828; padding: 14px 18px; border-radius: 0 10px 10px 0; margin: 16px 0; }
+  .danger::before { content: "🚨 "; font-weight: bold; color: #c62828; }
+  .success { background: #e8f5e9; border-left: 5px solid #2e7d32; padding: 14px 18px; border-radius: 0 10px 10px 0; margin: 16px 0; }
+  .success::before { content: "✅ "; font-weight: bold; color: #2e7d32; }
+
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.9rem; }
+  th, td { border: 1px solid #dde1e6; padding: 9px 12px; text-align: left; }
+  th { background: #0f3460; color: #fff; font-weight: 600; }
+  tr:nth-child(even) { background: #f7f8fa; }
+
+  .action-box { background: #f0f5ff; border: 2px solid #0f3460; border-radius: 10px; padding: 18px 20px; margin: 14px 0; }
+  .action-box .title { font-weight: bold; color: #0f3460; font-size: 1rem; margin-bottom: 6px; display: block; }
+
+  .hex-grid { display: flex; flex-wrap: wrap; gap: 3px; margin: 8px 0; font-family: 'JetBrains Mono', monospace; }
+  .hex-cell { background: #1a1b26; color: #a9b1d6; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; text-align: center; }
+  .hex-cell.label { background: none; color: #e94560; font-weight: bold; min-width: 50px; text-align: right; }
+  .hex-cell.hdr { background: #e94560; color: #fff; font-weight: bold; }
+  .hex-cell.len { background: #7c3aed; color: #fff; }
+  .hex-cell.st { background: #0ea5e9; color: #fff; }
+  .hex-cell.end { background: #2d2d44; color: #666; }
+  .hex-cell.addr { background: #333; color: #888; font-size: 0.7rem; min-width: 70px; }
+
+  .screenshot-sim { background: #0d1117; color: #c9d1d9; border-radius: 12px; padding: 14px 16px; margin: 14px 0; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; overflow-x: auto; }
+  .screenshot-sim .addr { color: #484f58; }
+  .screenshot-sim .highlight { background: #1f6feb33; }
+  .screenshot-sim .cursor { background: #e94560; color: #fff; }
+  .screenshot-sim .sel { background: #1f6feb66; }
+  .screenshot-sim .heading { color: #58a6ff; font-size: 0.82rem; font-weight: bold; margin-bottom: 8px; }
+
+  .split-2 { display: flex; gap: 16px; margin: 12px 0; }
+  .split-2 > div { flex: 1; }
+
+  .badge { display: inline-block; background: #e94560; color: #fff; padding: 2px 12px; border-radius: 12px; font-size: 0.78rem; font-weight: bold; margin-right: 6px; }
+
+  @media (max-width: 700px) {
+    .container { padding: 10px; }
+    .section, .toc { padding: 18px 16px; }
+    .split-2 { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🛠️ ImHex 完整解題操作指南</h1>
+<p class="subtitle">使用 ImHex 十六進位編輯器，逐步完成 NTFS Runlist 資料復原的所有任務</p>
+
+<div class="toc">
+<h2>📋 任務總覽</h2>
+<ol>
+  <li>從 $Boot 讀取磁碟幾何（Cluster Size、$MFT Offset）</li>
+  <li>在 $MFT 中找到目標檔案的記錄與 Byte Offset</li>
+  <li>確認記錄為 DELETED 且 $DATA 為 NON-RESIDENT</li>
+  <li>解碼 Runlist：長度 · 相對偏移 · 絕對 LCN · Byte Offset</li>
+  <li>Carve 資料、依 VCN 順序組合、Trim、計算 Hash</li>
+</ol>
+<p style="margin-top:12px; color:#666; font-size:0.85rem;">📁 使用檔案：<code>HL-WS02.001</code>（主示範）與 <code>HL-WS03.001</code>（團隊練習）</p>
+</div>
+
+<!-- ============================================================== -->
+<!--                          前 言                                   -->
+<!-- ============================================================== -->
+<div class="section">
+<h2>0. 開始之前 — ImHex 基本操作</h2>
+
+<table>
+  <tr><th>快捷鍵</th><th>功能</th><th>用途</th></tr>
+  <tr><td><span class="key">Ctrl+O</span></td><td>開啟檔案</td><td>載入 .001 磁碟映像檔</td></tr>
+  <tr><td><span class="key">Ctrl+G</span></td><td>跳到偏移（Goto）</td><td>輸入十或十六進位 offset 直接跳位置</td></tr>
+  <tr><td><span class="key">Ctrl+F</span></td><td>搜尋（Find）</td><td>可搜尋 Hex（如 <code>80 00 00 00</code>）或 ASCII（如 <code>FILE0</code>）</td></tr>
+  <tr><td><span class="key">F3</span> / <span class="key">Shift+F3</span></td><td>下一個 / 上一個</td><td>繼續搜尋</td></tr>
+  <tr><td><span class="key">Ctrl+E</span></td><td>選取範圍</td><td>輸入起始與長度來選取區塊</td></tr>
+  <tr><td><span class="key">Ctrl+Shift+C</span></td><td>複製選取範圍</td><td>可選 Hex 或 Raw Data 格式</td></tr>
+  <tr><td><span class="key">Ctrl+S</span></td><td>匯出選取範圍</td><td>將選取區塊另存為新檔案</td></tr>
+</table>
+
+<div class="tip">
+<strong>右側面板</strong>：ImHex 的右側 Data Inspector 會自動顯示游標所在位置的值，支援多種格式顯示（如 uint16、uint32 等），非常適合在閱讀 Runlist 時即時轉換數值。
+</div>
+</div>
+
+<!-- ============================================================== -->
+<!--                      任務 1                                      -->
+<!-- ============================================================== -->
+<div class="section">
+<h2>任務 1 — 從 $Boot 讀取磁碟幾何</h2>
+
+<p><span class="badge">STEP 1</span> 開啟檔案：<span class="menu">File → Open</span> → 選擇 <code>HL-WS02.001</code></p>
+<p>打開後，游標預設在 offset <code>0x00000000</code>，這就是 <strong>$Boot</strong> 的第一個 sector（前 512 bytes）。</p>
+
+<h3>1.1 讀取 Bytes per Sector</h3>
+
+<div class="action-box">
+<span class="title">📍 操作步驟</span>
+<ol>
+  <li>按 <span class="key">Ctrl+G</span>，輸入 <code>0x0B</code>（$Boot 內的偏移位置）</li>
+  <li>看到兩個 bytes：<code>00 02</code></li>
+  <li>ImHex 的 Data Inspector 右側會自動顯示：<strong>uint16 = 512</strong></li>
+</ol>
+</div>
+
+<table>
+  <tr><th>理論</th><th>實作結果</th></tr>
+  <tr><td>Bytes per Sector 位於 offset <code>0x0B</code>，2 bytes，Little-Endian</td>
+      <td><code>00 02</code> → 反轉讀取 → <code>0x0200</code> → <strong>512</strong></td></tr>
+</table>
+
+<div class="screenshot-sim">
+<div class="heading">📟 ImHex 畫面模擬（offset 0x0B）</div>
+<span class="addr">0000000B</span>  00 02 08 00 00 00 00 00 00 F8 00 00 00 00 00 00<br>
+                    <span style="background:#1f6feb66">↑↑</span><br>
+                    <span style="color:#8b949e;font-size:0.75rem;">bytes per sector = 0x0200 = 512</span>
+</div>
+
+<h3>1.2 讀取 Sectors per Cluster</h3>
+
+<div class="action-box">
+<span class="title">📍 操作步驟</span>
+<ol>
+  <li>按 <span class="key">Ctrl+G</span>，輸入 <code>0x0D</code></li>
+  <li>看到一個 byte：<code>08</code></li>
+  <li><strong>Cluster Size = 512 × 8 = 4,096 bytes</strong></li>
+</ol>
+</div>
+
+<h3>1.3 讀取 $MFT 起始叢集</h3>
+
+<div class="action-box">
+<span class="title">📍 操作步驟</span>
+<ol>
+  <li>按 <span class="key">Ctrl+G</span>，輸入 <code>0x30</code></li>
+  <li>看到 8 個 bytes：<code>04 00 00 00 00 00 00 00</code></li>
+  <li>Data Inspector 顯示為 <strong>uint64 = 4</strong>（$MFT 在 Cluster 4）</li>
+  <li><strong>$MFT Byte Offset = 4 × 4,096 = 16,384</strong></li>
+</ol>
+</div>
+
+<h3>1.4 驗證 $MFT 位置</h3>
+
+<div class="action-box">
+<span class="title">📍 操作步驟</span>
+<ol>
+  <li>按 <span class="key">Ctrl+G</span>，輸入 <code>16384</code>（或 <code>0x4000</code>）</li>
+  <li>檢查這 4 個 bytes：<code>46 49 4C 45</code> = ASCII <code>FILE</code> ✓</li>
+  <li>第 5 個 byte 為 <code>30</code>（即 <code>0</code>），合起來就是 <code>FILE0</code></li>
+</ol>
+</div>
+
+<div class="success">
+<strong>任務 1 結果</strong><br>
+<code>Bytes per Sector = 512</code><br>
+<code>Sectors per Cluster = 8</code><br>
+<code><strong>Cluster Size = 4,096 bytes</strong></code><br>
+<code>$MFT Start Cluster = 4</code><br>
+<code><strong>$MFT Byte Offset = 16,384</strong></code>
+</div>
+
+<div class="warn">
+<strong>這組數字對 HL-WS02.001 和 HL-WS03.001 都適用</strong>（兩顆都是同一批建立的 NTFS 磁碟）。如果你在不一樣的映像檔上操作，請重新讀取一次！
+</div>
+</div>
+
+<!-- ============================================================== -->
+<!--                      任務 2                                      -->
+<!-- ============================================================== -->
+<div class="section">
+<h2>任務 2 — 在 $MFT 中找到目標記錄</h2>
+
+<p>目標：找到 <strong>manifest_0448.png</strong>（HL-WS02.001 上的已刪除貨運艙單）。</p>
+
+<h3>方法 A：直接跳到已知 Record Number</h3>
+<p>根據課程提示，manifest_0448.png 是 <strong>Record 61</strong>。</p>
+
+<div class="action-box">
+<span class="title">📍 操作步驟</span>
+<ol>
+  <li>每筆 MFT 記錄固定 <strong>1,024 bytes</strong></li>
+  <li>Record 61 的偏移 = $MFT offset + (61 × 1,024)</li>
+  <li>= 16,384 + 62,464 = <strong>78,848</strong>（即 0x13400）</li>
+  <li>按 <span class="key">Ctrl+G</span>，輸入 <code>0x13400</code></li>
+</ol>
+</div>
+
+<div class="screenshot-sim">
+<div class="heading">📟 ImHex — Record 61 開頭</div>
+<span class="addr">00013400</span>  <span style="background:#1f6feb66">46 49 4C 45 30 00 03 00</span>  00 00 00 00 00 00 00 00  │ FILE0...........
+<span class="addr">00013410</span>  03 00 01 00 38 00 00 00  70 01 00 00 00 04 00 00  │ ....8...p.......
+</div>
+
+<p>確認看到 <code>FILE0</code> 簽名，表示這確實是一筆 MFT 記錄。</p>
+
+<h3>方法 B：搜尋檔名（如果不知道 Record Number）</h3>
+
+<div class="action-box">
+<span class="title">📍 操作步驟</span>
+<ol>
+  <li>按 <span class="key">Ctrl+F</span>，切換到 <strong>ASCII</strong> 搜尋模式</li>
+  <li>但檔名在 NTFS 中是 Unicode（UTF-16LE）儲存的，不能直接搜尋 ASCII</li>
+  <li>改成用 <strong>Hex</strong> 搜尋：
+    <pre>6d 00 61 00 6e 00 69 00 66 00 65 00 73 00 74 00 5f 00 30 00 34 00 34 00 38 00</pre>
+    （這是 <code>manifest_0448</code> 的 UTF-16LE 編碼）
+  </li>
+  <li>按 <span class="key">F3</span> 尋找下一個直到找到目標</li>
+  <li>找到後，該檔名所在的 MFT 記錄開頭必定在前方不遠處且以 <code>FILE0</code> 開始</li>
+  <li>或者直接檢查「該檔名所在的記錄」。找到後檢查記錄偏移 <code>0x2C</code> 處的 4 bytes → 就是 Record Number</li>
+</ol>
+</div>
+
+<div class="success">
+<strong>任務 2 結果</strong><br>
+<code>manifest_0448.png → MFT Record 61</code><br>
+<code>Record Byte Offset = 0x13400 (78,848)</code>
+</div>
+
+<div class="tip">
+如果之後你在 HL-WS03.001 上操作團隊任務：<br>
+<strong>Team A</strong>：manifest_0511.png → Record 46（offset 0xF800 = 63,488）<br>
+<strong>Team B</strong>：manifest_0512.png → Record 61（offset 0x13400 = 78,848）
+</div>
+</div>
+
+<!-- ============================================================== -->
+<!--                      任務 3                                      -->
+<!-- ============================================================== -->
+<div class="section">
+<h2>任務 3 — 確認 DELETED 與 NON-RESIDENT</h2>
+
+<h3>3.1 檢查 Allocation Status（是否為已刪除）</h3>
+
+<div class="action-box">
+<span class="title">📍 操作步驟</span>
+<ol>
+  <li>目前在 Record 61 開頭（0x13400）</li>
+  <li>記錄內偏移 <code>0x16</code> 處 = 檔案偏移 <code>0x13416</code></li>
+  <li>按 <span class="key">Ctrl+G</span>，輸入 <code>0x13416</code></li>
+  <li>看到 2 個 bytes：<code>00 00</code></li>
+</ol>
+</div>
+
+<div class="screenshot-sim">
+<div class="heading">📟 Record 61, offset 0x16</div>
+<span class="addr">00013414</span>  38 00 <span style="background:#e94560;">00 00</span> 70 01 00 00  00 04 00 00           │ 8...p.......
+               ↑      ↑
+               attr   <span style="color:#e94560;">flags = 0x0000 → DELETED FILE</span>
+               offset
+</div>
+
+<table>
+  <tr><th>Flags 值</th><th>意義</th></tr>
+  <tr><td><code>00 00</code></td><td><strong>已刪除檔案</strong> ✅ ← 我們要的</td></tr>
+  <tr><td><code>01 00</code></td><td>正常檔案</td></tr>
+  <tr><td><code>02 00</code></td><td>已刪除目錄</td></tr>
+  <tr><td><code>03 00</code></td><td>正常目錄</td></tr>
+</table>
+
+<h3>3.2 找到 $DATA 屬性</h3>
+
+<div class="action-box">
+<span class="title">📍 操作步驟</span>
+<ol>
+  <li>按 <span class="key">Ctrl+F</span>，切換到 <strong>Hex</strong> 搜尋模式</li>
+  <li>搜尋 <code>80 00 00 00</code>（$DATA 屬性的簽名）</li>
+  <li>游標會跳到 Record 61 範圍內的第一個 <code>80 00 00 00</code></li>
+  <li>確定位於 Record 61 內（offset 0x13518）</li>
+</ol>
+</div>
+
+<div class="screenshot-sim">
+<div class="heading">📟 $DATA 屬性開頭（offset 0x13518）</div>
+<span class="addr">00013518</span>  <span style="background:#1f6feb66;">80 00 00 00 50 00 00 00</span>  01 00 00 00 00 00 02 00  │ ....P...........
+<span class="addr">00013528</span>  00 00 00 00 00 00 00 00  39 00 00 00 00 00 00 00  │ ........9.......
+</div>
+
+<p>欄位解析：</p>
+<table>
+  <tr><th>Attr 內偏移</th><th>值</th><th>意義</th></tr>
+  <tr><td><code>0x00</code> (type)</td><td><code>80 00 00 00</code></td><td>這是 <strong>$DATA</strong> 屬性</td></tr>
+  <tr><td><code>0x04</code> (length)</td><td><code>50 00 00 00</code></td><td>屬性總長度 = 0x50 = 80 bytes</td></tr>
+  <tr><td><code>0x08</code> (resident flag)</td><td><code>01</code></td><td><strong>NON-RESIDENT</strong> ✅ → 內容不在記錄內，在 Runlist 裡</td></tr>
+</table>
+
+<div class="success">
+<strong>任務 3 結果</strong><br>
+✅ Allocation Status 在 offset 0x13416 = <code>00 00</code> → <strong>DELETED FILE</strong><br>
+✅ $DATA Non-resident flag 在 offset 0x13520 = <code>01</code> → <strong>NON-RESIDENT</strong><br>
+→ 檔案已刪除，內容在 Runlist 中，可以開始解碼！
+</div>
+</div>
+
+<!-- ============================================================== -->
+<!--                      任務 4                                      -->
+<!-- ============================================================== -->
+<div class="section">
+<h2>任務 4 — 解碼 Runlist</h2>
+
+<p>這是整份課程的核心。我們要從 $DATA 屬性中讀出 Runlist，解碼出三個 Run 的長度、LCN、Byte Offset。</p>
+
+<h3>4.1 找到 Runlist 的起始位置</h3>
+
+<div class="action-box">
+<span class="title">📍 規則</span>
+Runlist 從 $DATA 屬性開頭往後數 <strong>0x40（64）bytes</strong> 開始。<br>
+$DATA 在 <code>0x13518</code>，所以 Runlist 在 <code>0x13518 + 0x40 = 0x13558</code>。
+</div>
+
+<div class="screenshot-sim">
+<div class="heading">📟 Runlist 原始資料（offset 0x13558）</div>
+<span class="addr">00013558</span>  <span style="background:#e94560;">21</span> <span style="background:#7c3aed;">18</span> <span style="background:#0ea5e9;">30 31</span> <span style="background:#e94560;">22</span> <span style="background:#7c3aed;">14 00</span> <span style="background:#0ea5e9;">78 EC</span> <span style="background:#e94560;">21</span> <span style="background:#7c3aed;">0E</span> <span style="background:#0ea5e9;">28 23</span> <span style="background:#2d2d44;">00</span>
+</div>
+
+<p>顏色標示：<span style="color:#e94560;">■ Header</span> · <span style="color:#7c3aed;">■ Length</span> · <span style="color:#0ea5e9;">■ Start (相對 LCN)</span> · <span style="color:#2d2d44;">■ End</span></p>
+
+<h3>4.2 解碼 Run 1</h3>
+
+<table>
+  <tr><th>步驟</th><th>Hex</th><th>計算</th><th>結果</th></tr>
+  <tr>
+    <td>讀取 Header</td>
+    <td><code>21</code></td>
+    <td>右 nibble = 1 → Length 佔 1 byte<br>左 nibble = 2 → Start 佔 2 bytes<br>整筆 = 1+1+2 = 4 bytes</td>
+    <td>✓</td>
+  </tr>
+  <tr>
+    <td>讀取 Length</td>
+    <td><code>18</code></td>
+    <td>1 byte，直接讀 → 0x18 = <strong>24</strong></td>
+    <td><strong>24 clusters</strong></td>
+  </tr>
+  <tr>
+    <td>讀取 Start</td>
+    <td><code>30 31</code></td>
+    <td>Little-Endian → 反轉為 <code>31 30</code> → 0x3130</td>
+    <td><strong>LCN = 12,592</strong></td>
+  </tr>
+  <tr>
+    <td>Byte Offset</td>
+    <td colspan="2">12,592 × 4,096 = <strong>51,576,832</strong></td>
+    <td>✅</td>
+  </tr>
+</table>
+
+<div class="success">
+<strong>Run 1</strong>：LCN 12,592 · 長度 24 叢集 · Byte Offset 51,576,832
+</div>
+
+<h3>4.3 解碼 Run 2（關鍵：含負數運算）</h3>
+
+<table>
+  <tr><th>步驟</th><th>Hex</th><th>計算</th><th>結果</th></tr>
+  <tr>
+    <td>讀取 Header</td>
+    <td><code>22</code></td>
+    <td>右 nibble = 2 → Length 佔 2 bytes<br>左 nibble = 2 → Start 佔 2 bytes<br>整筆 = 1+2+2 = 5 bytes</td>
+    <td>✓</td>
+  </tr>
+  <tr>
+    <td>讀取 Length</td>
+    <td><code>14 00</code></td>
+    <td>2 bytes LE → 反轉為 <code>00 14</code> → 0x0014</td>
+    <td><strong>20 clusters</strong></td>
+  </tr>
+  <tr>
+    <td>讀取 Start（相對）</td>
+    <td><code>78 EC</code></td>
+    <td>反轉為 <code>EC 78</code> → 0xEC78<br>E ≥ 8 → <strong>負數</strong><br>0xEC78 - 0x10000 = -5,000</td>
+    <td><strong>相對 = -5,000</strong></td>
+  </tr>
+  <tr>
+    <td>計算絕對 LCN</td>
+    <td colspan="2">Run 1 的 LCN + (-5,000) = 12,592 - 5,000</td>
+    <td><strong>LCN = 7,592</strong></td>
+  </tr>
+  <tr>
+    <td>Byte Offset</td>
+    <td colspan="2">7,592 × 4,096 = <strong>31,096,832</strong></td>
+    <td>✅</td>
+  </tr>
+</table>
+
+<div class="danger">
+<strong>🚨 Run 2 的 Start 是「相對於 Run 1 的 LCN」，而且是「帶符號整數」！</strong><br>
+看到 <code>78 EC</code> 先反轉為 <code>EC 78</code>，最高位 E ≥ 8 → 負數！<br>
+<code>0xEC78 - 0x10000 = -5,000</code> → Run 2 在 Run 1 的「左邊」5,000 個叢集。
+</div>
+
+<div class="success">
+<strong>Run 2</strong>：LCN 7,592 · 長度 20 叢集 · Byte Offset 31,096,832
+</div>
+
+<h3>4.4 解碼 Run 3</h3>
+
+<table>
+  <tr><th>步驟</th><th>Hex</th><th>計算</th><th>結果</th></tr>
+  <tr>
+    <td>讀取 Header</td>
+    <td><code>21</code></td>
+    <td>Length 1 byte, Start 2 bytes → 4 bytes</td>
+    <td>✓</td>
+  </tr>
+  <tr>
+    <td>讀取 Length</td>
+    <td><code>0E</code></td>
+    <td>0x0E</td>
+    <td><strong>14 clusters</strong></td>
+  </tr>
+  <tr>
+    <td>讀取 Start（相對）</td>
+    <td><code>28 23</code></td>
+    <td>反轉為 <code>23 28</code> → 0x2328<br>2 < 8 → <strong>正數</strong><br>0x2328 = 9,000</td>
+    <td><strong>相對 = +9,000</strong></td>
+  </tr>
+  <tr>
+    <td>計算絕對 LCN</td>
+    <td colspan="2">Run 2 的 LCN + 9,000 = 7,592 + 9,000</td>
+    <td><strong>LCN = 16,592</strong></td>
+  </tr>
+  <tr>
+    <td>Byte Offset</td>
+    <td colspan="2">16,592 × 4,096 = <strong>67,964,832</strong></td>
+    <td>✅</td>
+  </tr>
+</table>
+
+<div class="success">
+<strong>Run 3</strong>：LCN 16,592 · 長度 14 叢集 · Byte Offset 67,964,832
+</div>
+
+<h3>4.5 計算檔案大小</h3>
+
+<div class="action-box">
+<span class="title">📍 從 $DATA Header 讀取 Logical Size</span>
+<ol>
+  <li>$DATA 開頭在 <code>0x13518</code></li>
+  <li>屬性內偏移 <code>0x30</code> = 檔案偏移 <code>0x13548</code></li>
+  <li>看到 8 bytes：<code>99 97 03 00 00 00 00 00</code></li>
+  <li>反轉為 <code>00 00 00 00 00 03 97 99</code> → 0x00039799</li>
+  <li><strong>Logical Size = 235,417</strong></li>
+</ol>
+</div>
+
+<table>
+  <tr><th></th><th>計算方式</th><th>數值</th></tr>
+  <tr><td>Allocated Size</td><td>(24+20+14) × 4,096</td><td>237,568 bytes</td></tr>
+  <tr><td><strong>Logical Size</strong></td><td>從 $DATA header offset 0x30 讀取</td><td><strong>235,417 bytes</strong></td></tr>
+  <tr><td>Slack</td><td>237,568 - 235,417</td><td>2,151 bytes（最後要砍掉）</td></tr>
+</table>
+
+<div class="success">
+<strong>任務 4 結果（完整 Runlist 解碼表）</strong><br>
+</div>
+
+<table>
+  <tr><th>Run</th><th>Header</th><th>長度（叢集）</th><th>相對偏移</th><th>絕對 LCN</th><th>Byte Offset</th><th>大小 (bytes)</th></tr>
+  <tr><td>1</td><td><code>21</code></td><td>24</td><td>（第一個，絕對值）</td><td>12,592</td><td>51,576,832</td><td>98,304</td></tr>
+  <tr><td>2</td><td><code>22</code></td><td>20</td><td>-5,000</td><td>7,592</td><td>31,096,832</td><td>81,920</td></tr>
+  <tr><td>3</td><td><code>21</code></td><td>14</td><td>+9,000</td><td>16,592</td><td>67,964,832</td><td>57,344</td></tr>
+  <tr><td colspan="3"><strong>總計</strong></td><td></td><td></td><td><strong>237,568</strong></td></tr>
+</table>
+
+<div class="warn">
+<strong>自我檢查</strong>：這個 volume 總共有 25,599 個叢集。任何 LCN 大於 25,599 都代表你算錯了 — 通常是把 Run 2 的負號忽略了！
+</div>
+</div>
+
+<!-- ============================================================== -->
+<!--                      任務 5                                      -->
+<!-- ============================================================== -->
+<div class="section">
+<h2>任務 5 — Carve、組合、Trim、Hash</h2>
+
+<h3>5.1 選取並匯出 Run 1</h3>
+
+<div class="action-box">
+<span class="title">📍 操作步驟</span>
+<ol>
+  <li>按 <span class="key">Ctrl+G</span>，輸入 <code>51576832</code>（Run 1 的起始偏移）</li>
+  <li>按 <span class="key">Ctrl+E</span>（選取範圍）</li>
+  <li>輸入長度 <code>98304</code>（24 × 4,096）</li>
+  <li>對選取區按右鍵 → <span class="menu">Export</span> → 命名為 <code>run1.bin</code></li>
+</ol>
+</div>
+
+<h3>5.2 選取並匯出 Run 2</h3>
+
+<div class="action-box">
+<span class="title">📍 操作步驟</span>
+<ol>
+  <li>按 <span class="key">Ctrl+G</span>，輸入 <code>31096832</code></li>
+  <li>按 <span class="key">Ctrl+E</span>，輸入長度 <code>81920</code>（20 × 4,096）</li>
+  <li>匯出為 <code>run2.bin</code></li>
+</ol>
+</div>
+
+<h3>5.3 選取並匯出 Run 3</h3>
+
+<div class="action-box">
+<span class="title">📍 操作步驟</span>
+<ol>
+  <li>按 <span class="key">Ctrl+G</span>，輸入 <code>67960832</code></li>
+  <li>按 <span class="key">Ctrl+E</span>，輸入長度 <code>57344</code>（14 × 4,096）</li>
+  <li>匯出為 <code>run3.bin</code></li>
+</ol>
+</div>
+
+<div class="warn">
+<strong>再次確認三條資料的起點和長度：</strong><br>
+Run 1: offset 51,576,832, 長度 98,304<br>
+Run 2: offset 31,096,832, 長度 81,920<br>
+Run 3: offset 67,960,832, 長度 57,344<br>
+注意：Run 2 的 offset 比 Run 1 <strong>小</strong> -> 它在磁碟上位於 Run 1 之前
+</div>
+
+<h3>5.4 按照 VCN 順序拼接</h3>
+
+<div class="danger">
+<strong>🚨 順序絕對不能錯！</strong><br>
+磁碟上的順序是 Run 2 → Run 1 → Run 3，但檔案的 VCN 順序是 <strong>Run 1 → Run 2 → Run 3</strong>。<br>
+我們要按照 VCN 順序（0→23, 24→43, 44→57）拼接。
+</div>
+
+<div class="action-box">
+<span class="title">📍 拼接方法</span>
+<p><strong>方法 1：命令列（建議）</strong></p>
+<pre>
+copy /b run1.bin + run2.bin + run3.bin assembled.bin
+</pre>
+
+<p><strong>方法 2：手動拼接（在 ImHex 中）</strong></p>
+<ol>
+  <li>開啟一個新檔案（<span class="menu">File → New</span>）</li>
+  <li>依序開啟 run1.bin、run2.bin、run3.bin</li>
+  <li>全選 run1.bin 的內容，複製到新檔案</li>
+  <li>全選 run2.bin 的內容，接續貼上</li>
+  <li>全選 run3.bin 的內容，接續貼上</li>
+</ol>
+</div>
+
+<h3>5.5 Trim——切除 Slack</h3>
+
+<div class="action-box">
+<span class="title">📍 操作步驟</span>
+<ol>
+  <li>assembled.bin 目前大小 = 237,568 bytes</li>
+  <li>但檔案的 Logical Size = <strong>235,417 bytes</strong></li>
+  <li>多出的 <strong>2,151 bytes</strong> 是 slack，必須砍掉</li>
+  <li>在 ImHex 中：</li>
+  <ul>
+    <li>按 <span class="key">Ctrl+G</span>，輸入 <code>235417</code></li>
+    <li>從這裡選取到結尾（按 <span class="key">Ctrl+Shift+End</span>）</li>
+    <li>按 <span class="key">Del</span> 刪除</li>
+  </ul>
+  <li>或使用 HxD 風格的 <span class="key">Ctrl+E</span> → 起始 <code>235417</code> → 長度到結尾 → 刪除</li>
+</ol>
+</div>
+
+<div class="warn">
+<strong>為什麼要 Trim？</strong><br>
+如果不砍 slack，最後計算的 MD5 會和老師的不同。Hash 比對的是「檔案真正的內容（235,417 bytes）」，不是「檔案加垃圾（237,568 bytes）」。
+</div>
+
+<h3>5.6 重新命名</h3>
+<p>將 trimmed 檔案重新命名為 <code>manifest_0448.png</code></p>
+
+<h3>5.7 三層驗證</h3>
+
+<div class="action-box">
+<span class="title">🔍 第 1 層：檢查簽名</span>
+<ol>
+  <li>在 ImHex 中開啟 <code>manifest_0448.png</code></li>
+  <li>前 8 個 bytes 必須是：</li>
+  <pre>89 50 4E 47 0D 0A 1A 0A</pre>
+  <li>這是標準的 PNG 檔案簽名 → 表示 Run 1 的起點正確</li>
+</ol>
+</div>
+
+<div class="action-box">
+<span class="title">🔍 第 2 層：能否打開</span>
+<ol>
+  <li>直接雙擊檔案</li>
+  <li>若 PNG 檢視器能正常顯示圖片 → 大部分資料正確</li>
+</ol>
+</div>
+
+<div class="action-box">
+<span class="title">🔍 第 3 層：計算 MD5（最嚴格）</span>
+<p>在終端機中：</p>
+<pre>
+# Linux
+md5sum manifest_0448.png
+
+# Windows
+certutil -hashfile manifest_0448.png MD5
+</pre>
+<p>比對結果是否與老師提供的 MD5 一致。若一致 → 檔案完全正確。</p>
+</div>
+
+<div class="success">
+<strong>任務 5 完成！</strong><br>
+✅ 三個 Run 已匯出<br>
+✅ 依照 VCN 順序拼接（Run 1 → Run 2 → Run 3）<br>
+✅ 已 Trim 至 Logical Size（235,417 bytes）<br>
+✅ PNG 簽名正確 ✅ 圖片可開啟 ✅ MD5 驗證通過
+</div>
+</div>
+
+<!-- ============================================================== -->
+<!--                      補充：HL-WS03                               -->
+<!-- ============================================================== -->
+<div class="section">
+<h2>📋 補充：HL-WS03.001 團隊練習解答</h2>
+
+<p>當你在 HL-WS03.001 上進行團隊任務時，所有步驟完全一樣。以下是兩支團隊檔案的已解碼數據供核對：</p>
+
+<h3>Team A — manifest_0511.png（Record 46, offset 0xF800）</h3>
+
+<table>
+  <tr><th>Run</th><th>Header</th><th>長度</th><th>相對偏移</th><th>絕對 LCN</th><th>Byte Offset</th></tr>
+  <tr><td>1</td><td><code>21</code></td><td>21</td><td>（絕對值）</td><td>14,231</td><td>58,290,176</td></tr>
+  <tr><td>2</td><td><code>22</code></td><td>18</td><td>-6,437</td><td>7,794</td><td>31,924,224</td></tr>
+  <tr><td>3</td><td><code>21</code></td><td>12</td><td>+7,111</td><td>14,905</td><td>61,050,880</td></tr>
+</table>
+
+<p><strong>Logical Size</strong>：206,481 bytes（Allocated: 208,896）</p>
+
+<h3>Team B — manifest_0512.png（Record 61, offset 0x13400）</h3>
+
+<table>
+  <tr><th>Run</th><th>Header</th><th>長度</th><th>相對偏移</th><th>絕對 LCN</th><th>Byte Offset</th></tr>
+  <tr><td>1</td><td><code>21</code></td><td>19</td><td>（絕對值）</td><td>18,522</td><td>75,866,112</td></tr>
+  <tr><td>2</td><td><code>22</code></td><td>22</td><td>-4,913</td><td>13,609</td><td>55,742,464</td></tr>
+  <tr><td>3</td><td><code>21</code></td><td>13</td><td>+5,206</td><td>18,815</td><td>77,066,240</td></tr>
+</table>
+
+<p><strong>Logical Size</strong>：218,492 bytes（Allocated: 221,184）</p>
+
+<div class="tip">
+團隊任務的重點是互相對照「解題方法」而非「答案」。如果你的數字和上面不一樣，回頭檢查 Run 2 的相對偏移是否有正確處理負號！
+</div>
+</div>
+
+<!-- ============================================================== -->
+<!--                      常見錯誤                                    -->
+<!-- ============================================================== -->
+<div class="section">
+<h2>❌ 常見錯誤速查表</h2>
+
+<table>
+  <tr><th>症狀</th><th>原因</th><th>解法</th></tr>
+  <tr>
+    <td>LCN 算出來超過 25,599</td>
+    <td><strong>Run 2 的負號沒處理</strong></td>
+    <td>Run 2 的 Start 反轉後檢查最高位是否 ≥ 8。如果是，要減去 65,536。</td>
+  </tr>
+  <tr>
+    <td>Runlist Header 讀錯，整筆資料亂掉</td>
+    <td><strong>Left/Right Nibble 搞反</strong></td>
+    <td>左 nibble = Start 的 byte 數，右 nibble = Length 的 byte 數。順序是 Length bytes 在前，Start bytes 在後。</td>
+  </tr>
+  <tr>
+    <td>最後拼接的檔案大部分正確但尾巴壞了</td>
+    <td><strong>Run 的順序錯誤</strong></td>
+    <td>確認拼接順序是 VCN 順序（Run 1 → Run 2 → Run 3），不是 LCN 順序（Run 2 → Run 1 → Run 3）</td>
+  </tr>
+  <tr>
+    <td>圖檔打得開但 MD5 不符</td>
+    <td><strong>忘記 Trim</strong></td>
+    <td>回到 $DATA header 讀取 Logical Size，將檔案裁切到正確大小再重新計算 MD5。</td>
+  </tr>
+  <tr>
+    <td>Goto 某個 offset 但看到的資料不對</td>
+    <td><strong>Cluster Size 算錯</strong></td>
+    <td>回去重新確認 $Boot 的 bytes per sector 和 sectors per cluster。Cluster Size = 512 × 8 = 4,096。</td>
+  </tr>
+</table>
+</div>
+
+<!-- ============================================================== -->
+<!--                      結語                                        -->
+<!-- ============================================================== -->
+<div class="section" style="background:#0f3460; color:#fff;">
+<h2 style="color:#fff;">🎯 結語</h2>
+<p style="font-size:1.05rem;">你現在已經學會了：</p>
+<ol style="color:#cfd8e6;">
+  <li>用 ImHex 開啟裸磁碟映像檔並導航</li>
+  <li>從 $Boot Sector 讀取磁碟幾何參數</li>
+  <li>在 $MFT 中根據記錄編號或檔名找到目標</li>
+  <li>讀取 Allocation Status 判斷是否已刪除</li>
+  <li>找到 $DATA 屬性並確認 Resident / Non-Resident</li>
+  <li>從 Runlist 解碼出每個 Run 的長度、相對偏移、絕對 LCN 和 Byte Offset</li>
+  <li>用 ImHex 選取、匯出每個 Run 的資料</li>
+  <li>按照 VCN 順序拼接、Trim、Hash 驗證</li>
+</ol>
+<p style="margin-top:18px; font-size:1.2rem; text-align:center; color:#7fe0a8;">
+<strong>一個已刪除的檔案，用算術復原。</strong>
+</p>
+</div>
+
+</div>
+</body>
+</html>
