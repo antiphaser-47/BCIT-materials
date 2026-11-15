@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Class 4 Quiz — Memory &amp; Windows Artifacts</title>
+<style>
+  :root{
+    --navy:#0E2841; --title:#003E6B; --teal:#156082; --orange:#E97132;
+    --green:#196B24; --lightblue:#0F9ED5; --bg:#E8E8E8; --card:#FFFFFF;
+    --ink:#1A1A1A; --muted:#5F6B76; --line:#D9D9D9;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Segoe UI",Arial,Helvetica,sans-serif; line-height:1.5;
+    display:flex; flex-direction:column; min-height:100vh;
+  }
+  /* header */
+  header{
+    background:var(--navy); color:#fff; padding:14px 20px;
+    display:flex; align-items:center; gap:16px;
+  }
+  .badge{
+    background:#fff; color:var(--navy); font-weight:800; font-size:20px;
+    letter-spacing:.5px; padding:8px 10px; border-radius:3px; line-height:1;
+    flex:0 0 auto;
+  }
+  .htxt h1{font-size:18px; margin:0; font-weight:700;}
+  .htxt p{font-size:12.5px; margin:2px 0 0; color:#AFC3D6; letter-spacing:.4px;}
+  /* layout */
+  main{flex:1; display:flex; align-items:flex-start; justify-content:center; padding:28px 16px;}
+  .card{
+    background:var(--card); width:100%; max-width:760px; border-radius:12px;
+    box-shadow:0 6px 22px rgba(14,40,65,.12); padding:26px 28px 30px;
+  }
+  /* progress */
+  .top{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;}
+  .counter{font-size:13px; font-weight:700; color:var(--teal); letter-spacing:.3px;}
+  .tag{font-size:11.5px; font-weight:700; color:#fff; background:var(--teal);
+       padding:3px 10px; border-radius:20px; letter-spacing:.4px;}
+  .bar{height:8px; background:#E4E9ED; border-radius:6px; overflow:hidden; margin:10px 0 22px;}
+  .bar>span{display:block; height:100%; width:0; background:var(--lightblue); transition:width .35s ease;}
+  /* question */
+  .qtext{font-size:20px; font-weight:700; color:var(--title); margin:0 0 18px;}
+  .options{display:flex; flex-direction:column; gap:11px;}
+  .opt{
+    text-align:left; width:100%; border:2px solid var(--line); background:#fff;
+    color:var(--ink); font-size:15.5px; font-family:inherit; padding:13px 15px;
+    border-radius:9px; cursor:pointer; display:flex; align-items:center; gap:12px;
+    transition:border-color .15s, background .15s;
+  }
+  .opt:hover:not(:disabled){border-color:var(--teal); background:#F4F8FB;}
+  .opt:disabled{cursor:default;}
+  .opt .key{
+    flex:0 0 auto; width:26px; height:26px; border-radius:50%; background:var(--bg);
+    color:var(--navy); font-weight:800; font-size:13px; display:flex;
+    align-items:center; justify-content:center;
+  }
+  .opt.correct{border-color:var(--green); background:#EAF5EC;}
+  .opt.correct .key{background:var(--green); color:#fff;}
+  .opt.wrong{border-color:var(--orange); background:#FCEDE4;}
+  .opt.wrong .key{background:var(--orange); color:#fff;}
+  /* feedback */
+  .fb{margin-top:18px; padding:14px 16px; border-radius:9px; font-size:14.5px;
+      display:none; border-left:5px solid var(--teal); background:#F1F6F9;}
+  .fb.show{display:block;}
+  .fb b{color:var(--title);}
+  .fb.ok{border-left-color:var(--green); background:#EAF5EC;}
+  .fb.no{border-left-color:var(--orange); background:#FCEDE4;}
+  /* controls */
+  .controls{margin-top:22px; display:flex; justify-content:flex-end;}
+  .btn{
+    background:var(--teal); color:#fff; border:none; font-family:inherit;
+    font-size:15px; font-weight:700; padding:12px 26px; border-radius:8px;
+    cursor:pointer; transition:background .15s, opacity .15s;
+  }
+  .btn:hover{background:#0E4C67;}
+  .btn:disabled{opacity:.4; cursor:not-allowed;}
+  /* results */
+  .result{text-align:center; padding:10px 0 6px;}
+  .result h2{color:var(--title); font-size:24px; margin:0 0 6px;}
+  .score{font-size:64px; font-weight:800; color:var(--teal); line-height:1; margin:14px 0 4px;}
+  .score small{font-size:24px; color:var(--muted); font-weight:700;}
+  .verdict{font-size:16px; font-weight:600; margin:6px 0 20px;}
+  .review{text-align:left; margin:18px 0 6px; border-top:1px solid var(--line); padding-top:16px;}
+  .review h3{font-size:14px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; margin:0 0 12px;}
+  .ritem{display:flex; gap:10px; padding:9px 0; border-bottom:1px solid #EEF1F3; font-size:14px;}
+  .ricon{flex:0 0 auto; font-weight:800; width:20px;}
+  .ricon.ok{color:var(--green);} .ricon.no{color:var(--orange);}
+  .ritem .rq{color:var(--ink);}
+  footer{text-align:center; font-size:12px; color:var(--muted); padding:14px;}
+  @media(max-width:520px){
+    .card{padding:20px 16px 24px;} .qtext{font-size:18px;} .score{font-size:52px;}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="badge">BCIT</div>
+  <div class="htxt">
+    <h1>Class 4 Quiz — Memory &amp; Windows Artifacts</h1>
+    <p>DIGITAL FORENSICS &amp; CYBERSECURITY WORKSHOP</p>
+  </div>
+</header>
+
+<main>
+  <div class="card" id="card"><!-- filled by JS --></div>
+</main>
+
+<footer>Digital Forensics &amp; Cybersecurity — 2026 &nbsp;·&nbsp; 16 questions</footer>
+
+<script>
+const QUESTIONS = [
+  {
+    tag:"Memory Analysis",
+    q:"Why is a machine's RAM described as holding “the crown jewels” for an investigator?",
+    options:[
+      "It can hold encryption keys, plaintext passwords, decrypted documents, and disk-less malware",
+      "It stores a permanent backup of every file on the disk",
+      "It keeps the same contents even after the machine is powered off",
+      "It is the only place a forensic hash can be calculated"
+    ],
+    answer:0,
+    explain:"Live RAM can contain encryption keys, passwords in plaintext, open documents already decrypted, malware that never touches disk, and active network connections. It is volatile — power off and it's gone."
+  },
+  {
+    tag:"Memory Analysis",
+    q:"You arrive at a scene with a running computer and legal authority to search it. What is the rule for RAM capture?",
+    options:[
+      "Only capture RAM if you suspect encryption is in use",
+      "Machine on + legal authority = capture, essentially always",
+      "Shut it down first, then image the disk before touching memory",
+      "Skip RAM — the pagefile holds the same data anyway"
+    ],
+    answer:1,
+    explain:"Machine on plus legal authority means capture — essentially always. It costs minutes but has case-making value; skipping it can be a fatal, unrecoverable omission."
+  },
+  {
+    tag:"Memory Analysis",
+    q:"What is the core discipline when running a RAM-capture tool on a live machine?",
+    options:[
+      "Install the tool onto the evidence disk so it runs faster",
+      "Dump the memory to the suspect's Desktop for convenience",
+      "Run the tool from external media and dump TO external media — never to the evidence disk",
+      "Reboot the machine first so the capture is clean"
+    ],
+    answer:2,
+    explain:"Run from external media and write the dump to external media — never the evidence disk. Also record the tool and version, the times, dump size vs installed RAM, and the hash of the dump."
+  },
+  {
+    tag:"Memory Analysis",
+    q:"During a RAM capture, the dump comes out looking like a “slightly blurred photo.” What happened, and is it still usable?",
+    options:[
+      "The write-blocker failed — the dump must be discarded",
+      "The tool captured the pagefile instead of RAM",
+      "The dump is corrupt and cannot be hashed",
+      "This is memory smearing: RAM changes during the seconds of capture — it is normal, documented, and still evidence"
+    ],
+    answer:3,
+    explain:"Memory smearing happens because RAM keeps changing during the seconds it takes to capture. The result is like a slightly blurred photo — expected, documented, and still valid evidence."
+  },
+  {
+    tag:"Volatility",
+    q:"In a Volatility pstree, you see winword.exe as the parent of cmd.exe, and netscan shows that shell connected to 185.220.101.4:4444. What does this pattern suggest?",
+    options:[
+      "Normal behaviour — Word always launches a command shell",
+      "A red flag: Word spawning a shell that phones out is classic malicious activity worth investigating",
+      "The memory dump is smeared and the tree is unreliable",
+      "cmd.exe is a Windows system process and can be ignored"
+    ],
+    answer:1,
+    explain:"windows.pstree shows the process family tree; a document like Word launching a shell is suspicious. windows.netscan then reveals that shell's live connection, and windows.cmdline shows exactly what it was launched with."
+  },
+  {
+    tag:"Volatility",
+    q:"Which three Volatility commands were used today, and what does each reveal?",
+    options:[
+      "pslist, filescan, hashdump — files, hashes, and users",
+      "pstree (process family tree), netscan (network connections frozen in time), cmdline (how each program was launched)",
+      "imageinfo, kdbgscan, malfind — image details only",
+      "dumpfiles, memmap, vadinfo — raw memory maps only"
+    ],
+    answer:1,
+    explain:"windows.pstree gives every process as a family tree, windows.netscan shows network connections frozen at capture time, and windows.cmdline shows the command line each program was launched with."
+  },
+  {
+    tag:"Memory Analysis",
+    q:"If you were unable to capture live RAM, which on-disk sources can still contain memory contents?",
+    options:[
+      "hiberfil.sys, pagefile.sys, crash dumps, and VM suspend files (.vmem)",
+      "Only the Recycle Bin",
+      "The $MFT and $UsnJrnl only",
+      "The Windows Registry hives exclusively"
+    ],
+    answer:0,
+    explain:"Hibernation writes RAM to hiberfil.sys, pagefile.sys holds overflow pieces of memory, crash dumps capture memory at a fault, and a VM's .vmem suspend file is essentially its RAM for free."
+  },
+  {
+    tag:"Memory & Encryption",
+    q:"A suspect's BitLocker-encrypted volume is currently mounted and unlocked. Why does this make RAM capture order critical?",
+    options:[
+      "Because the disk image cannot be hashed once encrypted",
+      "Because RAM capture automatically decrypts the whole drive",
+      "Because the encryption keys can be pulled from the memory image, so capturing RAM first lets you unlock the disk image later",
+      "Because BitLocker deletes its keys the moment you start imaging the disk"
+    ],
+    answer:2,
+    explain:"BitLocker/FileVault keys can be extracted from a memory image (e.g. with Passware; if in plaintext, most forensic tools find them). Capture RAM while the volume is mounted, then unlock the disk image later — RAM capture first is not a preference."
+  },
+  {
+    tag:"X-Ways / OCR",
+    q:"After running OCR on graphics files in X-Ways, how should the extracted text be treated?",
+    options:[
+      "As court-ready evidence that needs no further review",
+      "As a perfectly consistent output that is identical on every run",
+      "As a helpful tool to locate images via index searches — results should not be treated as evidence without further review",
+      "As a replacement for examining the original image"
+    ],
+    answer:2,
+    explain:"OCR helps you find images through index searches, but engines have error rates and can produce different results run to run. Results are a lead, not evidence, until a human reviews the original."
+  },
+  {
+    tag:"X-Ways / Signatures",
+    q:"Why do investigators rely on file signature analysis rather than trusting file extensions?",
+    options:[
+      "Signatures make files open faster in X-Ways",
+      "Signatures are the only way to calculate a file's hash",
+      "Extensions are removed automatically during imaging",
+      "Extensions are easily changed to hide or disguise data, so signatures verify whether contents match the claimed format"
+    ],
+    answer:3,
+    explain:"Because an extension can be renamed to disguise a file, signature analysis checks the actual content against the claimed format — catching renamed files, hidden/disguised data, corruption, and malicious content."
+  },
+  {
+    tag:"Windows Structure",
+    q:"From roughly which Windows version onward did the default folder structure and most artifacts stabilise?",
+    options:[
+      "Windows Vista (2006)",
+      "Windows 95",
+      "Windows 10 (2015)",
+      "Windows XP (2001)"
+    ],
+    answer:0,
+    explain:"Windows has existed since 1985 with many versions, but the default layout and most artifacts stabilise from Vista (2006) on. Older systems are legacy exams — tailor your work to the version in front of you."
+  },
+  {
+    tag:"AppData",
+    q:"AppData is called a “hidden goldmine.” Which three subfolders does it contain, and why does it matter?",
+    options:[
+      "System32, SysWOW64, Config — kernel files only",
+      "Desktop, Documents, Downloads — user files only",
+      "Local, LocalLow, and Roaming — home to browser history, chat databases, and more, hidden by default",
+      "SAM, SOFTWARE, SYSTEM — registry hives only"
+    ],
+    answer:2,
+    explain:"C:\\Users\\%UserName%\\AppData holds Local (machine-specific data & caches), LocalLow (low-integrity/sandboxed apps), and Roaming (settings that follow the profile). Hidden by default, it stores browser history, chat databases, and much more."
+  },
+  {
+    tag:"Recycle Bin",
+    q:"When a file is deleted to the Recycle Bin, two files are created. What is the difference between the $R file and the $I file?",
+    options:[
+      "$R holds the metadata; $I holds the actual data",
+      "$R is the actual recoverable data (its MD5 matches the original); $I is the metadata record — original path, size, and delete date",
+      "$R and $I are identical duplicates of the original file",
+      "$R stores the hash; $I securely wipes the file"
+    ],
+    answer:1,
+    explain:"Deleting moves a file, it doesn't erase it. The $R file is the original data — its MD5 still matches the original — and the $I file is the metadata twin recording original path, size, and deletion date."
+  },
+  {
+    tag:"$I / Hex",
+    q:"In an $I file, the file size lives at offset 0x08 stored little-endian. If those bytes read A2 B3 08 00, what is the size?",
+    options:[
+      "0xA2B30800 bytes",
+      "Exactly 8 bytes — the field is only 8 bytes long",
+      "It cannot be determined without the file name",
+      "0x0008B3A2 = 570,274 bytes (~557 KB), because little-endian is read right-to-left"
+    ],
+    answer:3,
+    explain:"An $I record is fixed-offset: size at 0x08 (LE), deletion time at 0x10 (LE FILETIME), name length at 0x18, name at 0x1C (UTF-16). Little-endian means read the bytes right-to-left: A2 B3 08 00 → 0x0008B3A2 = 570,274 bytes."
+  },
+  {
+    tag:"Execution Artifacts",
+    q:"Both Prefetch (.pf) files and AmCache share one especially valuable property for an investigator. What is it?",
+    options:[
+      "They can prove a program executed even if that program was later deleted",
+      "They store the full contents of every file that ran",
+      "They only exist on Windows XP and earlier",
+      "They are stored in RAM and vanish on shutdown"
+    ],
+    answer:0,
+    explain:"Prefetch confirms what actually ran (with last-run time and run count) even if the program is since deleted, and AmCache keeps SHA-1 hashes and first-run timestamps of executables even after they're deleted."
+  },
+  {
+    tag:"Court-Ready Notes",
+    q:"The class ends on “cite your evidence.” What combination makes an artifact claim defensible in court?",
+    options:[
+      "A screenshot and a guess at the timestamp",
+      "The file name alone",
+      "A verbal description from the first responder",
+      "Path + tool + hash — where it lives, how you got it, and proof it's unchanged"
+    ],
+    answer:3,
+    explain:"Every artifact has a path and a time, and every claim needs a source: path + tool + hash makes it defensible. An artifact you cannot locate is an argument you cannot make in court."
+  }
+];
+
+const KEYS = ["A","B","C","D"];
+let idx = 0, score = 0, answered = false;
+const results = [];
+const card = document.getElementById("card");
+
+function renderQuestion(){
+  answered = false;
+  const item = QUESTIONS[idx];
+  const pct = Math.round((idx) / QUESTIONS.length * 100);
+  card.innerHTML = `
+    <div class="top">
+      <span class="counter">Question ${idx+1} of ${QUESTIONS.length}</span>
+      <span class="tag">${item.tag}</span>
+    </div>
+    <div class="bar"><span style="width:${pct}%"></span></div>
+    <p class="qtext">${item.q}</p>
+    <div class="options" id="opts"></div>
+    <div class="fb" id="fb"></div>
+    <div class="controls">
+      <button class="btn" id="next" disabled>${idx === QUESTIONS.length-1 ? "See results" : "Next question"}</button>
+    </div>`;
+  const opts = document.getElementById("opts");
+  item.options.forEach((text, i) => {
+    const b = document.createElement("button");
+    b.className = "opt";
+    b.innerHTML = `<span class="key">${KEYS[i]}</span><span>${text}</span>`;
+    b.onclick = () => choose(i);
+    opts.appendChild(b);
+  });
+  document.getElementById("next").onclick = nextQuestion;
+}
+
+function choose(i){
+  if(answered) return;
+  answered = true;
+  const item = QUESTIONS[idx];
+  const correct = i === item.answer;
+  if(correct) score++;
+  results.push({q:item.q, correct});
+  const buttons = document.querySelectorAll(".opt");
+  buttons.forEach((b, j) => {
+    b.disabled = true;
+    if(j === item.answer) b.classList.add("correct");
+    else if(j === i) b.classList.add("wrong");
+  });
+  const fb = document.getElementById("fb");
+  fb.className = "fb show " + (correct ? "ok" : "no");
+  fb.innerHTML = `<b>${correct ? "Correct." : "Not quite."}</b> ${item.explain}`;
+  document.getElementById("next").disabled = false;
+  document.getElementById("next").focus();
+}
+
+function nextQuestion(){
+  if(idx < QUESTIONS.length - 1){ idx++; renderQuestion(); }
+  else renderResults();
+}
+
+function renderResults(){
+  const total = QUESTIONS.length;
+  let verdict, color;
+  if(score === total){ verdict = "Perfect score — court-ready!"; color = "var(--green)"; }
+  else if(score >= 14){ verdict = "Strong work — you've got the fundamentals."; color = "var(--green)"; }
+  else if(score >= 10){ verdict = "Solid start — review the ones you missed."; color = "var(--teal)"; }
+  else { verdict = "Worth another look — revisit the Class 4 notes."; color = "var(--orange)"; }
+
+  const reviewRows = results.map((r, i) => `
+    <div class="ritem">
+      <span class="ricon ${r.correct ? "ok" : "no"}">${r.correct ? "✓" : "✗"}</span>
+      <span class="rq"><b>Q${i+1}.</b> ${r.q}</span>
+    </div>`).join("");
+
+  card.innerHTML = `
+    <div class="result">
+      <h2>Quiz complete</h2>
+      <div class="score">${score}<small>/${total}</small></div>
+      <p class="verdict" style="color:${color}">${verdict}</p>
+      <button class="btn" id="restart">Try again</button>
+      <div class="review">
+        <h3>Your answers</h3>
+        ${reviewRows}
+      </div>
+    </div>`;
+  document.getElementById("restart").onclick = restart;
+}
+
+function restart(){
+  idx = 0; score = 0; answered = false; results.length = 0;
+  renderQuestion();
+}
+
+// keyboard: 1-4 to answer, Enter/Right-arrow to advance
+document.addEventListener("keydown", (e) => {
+  if(["1","2","3","4"].includes(e.key)){
+    const b = document.querySelectorAll(".opt")[Number(e.key)-1];
+    if(b && !b.disabled) b.click();
+  } else if((e.key === "Enter" || e.key === "ArrowRight")){
+    const n = document.getElementById("next");
+    if(n && !n.disabled) n.click();
+  }
+});
+
+renderQuestion();
+</script>
+</body>
+</html>
